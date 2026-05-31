@@ -1,411 +1,386 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { NavigationMenu } from "radix-ui";
-import {
-  ArrowRight,
-  ChevronDown,
-  ChevronRight,
-  Download,
-  Menu,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, ChevronDown, Menu, Search, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { categoryTiles } from "@/lib/category-tiles";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import type { CategoryNode } from "@/types";
+import { HeaderSearchModal } from "./header-search";
 
 const STATIC_LINKS: { href: string; label: string }[] = [
+  { href: "/category", label: "Shop" },
   { href: "/about", label: "About" },
   { href: "/contact", label: "Contact" },
 ];
 
-export function HeaderShell({ categories }: { categories: CategoryNode[] }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const pathname = usePathname();
+const SCROLL_HIDE_THRESHOLD = 80; // px down before hide kicks in
+const AT_TOP_THRESHOLD = 10; // px from top to count as "at top"
 
-  // Close the mobile sheet whenever the user navigates.
+export function HeaderShell({ categories: _categories }: { categories: CategoryNode[] }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [atTop, setAtTop] = useState(true);
+  const [hidden, setHidden] = useState(false);
+  const [megaOpen, setMegaOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const lastScrollY = useRef(0);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
+  const openMega = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setMegaOpen(true);
+  }, []);
+
+  const scheduleCloseMega = useCallback((delay = 140) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => setMegaOpen(false), delay);
+  }, []);
+
+  // Close panels on navigation.
   useEffect(() => {
     setMobileOpen(false);
+    setMegaOpen(false);
+    setSearchOpen(false);
   }, [pathname]);
 
-  return (
-    <header></header>
-    // <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80">
-    //   <NavigationMenu.Root
-    //     className="relative z-10 w-full"
-    //     delayDuration={120}
-    //     skipDelayDuration={200}
-    //   >
-    //     <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:h-20 lg:px-8">
-    //       {/* ── Left: Logo ───────────────────────────── */}
-    //       <div className="flex shrink-0 items-center">
-    //         <Link
-    //           href="/"
-    //           className="text-zinc-900 text-xl font-semibold tracking-tight transition-opacity hover:opacity-80 lg:text-2xl"
-    //         >
-    //           {siteConfig.name}
-    //         </Link>
-    //       </div>
+  // Close mega when header hides on scroll-down.
+  useEffect(() => {
+    if (hidden) setMegaOpen(false);
+  }, [hidden]);
 
-    //       {/* ── Center: Desktop nav ──────────────────── */}
-    //       <NavigationMenu.List className="hidden items-center gap-1 lg:flex">
-    //         {categories.map((cat) => (
-    //           <NavigationMenu.Item key={cat.id}>
-    //             {cat.children.length > 0 ? (
-    //               <>
-    //                 <NavigationMenu.Trigger
-    //                   className={cn(
-    //                     "group inline-flex items-center gap-1 rounded-full px-3.5 py-2 text-sm font-medium tracking-tight text-zinc-700 outline-none transition-colors",
-    //                     "hover:text-zinc-950 focus-visible:ring-2 focus-visible:ring-zinc-900/20",
-    //                     "data-[state=open]:text-zinc-950",
-    //                   )}
-    //                 >
-    //                   {cat.name}
-    //                   <ChevronDown
-    //                     className="size-3.5 text-zinc-400 transition-transform duration-200 ease-out group-data-[state=open]:rotate-180 group-data-[state=open]:text-zinc-700"
-    //                     aria-hidden
-    //                   />
-    //                 </NavigationMenu.Trigger>
-    //                 <NavigationMenu.Content
-    //                   className={cn(
-    //                     "data-[motion=from-end]:animate-in data-[motion=from-end]:fade-in-0 data-[motion=from-end]:slide-in-from-right-4",
-    //                     "data-[motion=from-start]:animate-in data-[motion=from-start]:fade-in-0 data-[motion=from-start]:slide-in-from-left-4",
-    //                     "data-[motion=to-end]:animate-out data-[motion=to-end]:fade-out-0 data-[motion=to-end]:slide-out-to-right-4",
-    //                     "data-[motion=to-start]:animate-out data-[motion=to-start]:fade-out-0 data-[motion=to-start]:slide-out-to-left-4",
-    //                     "duration-200",
-    //                   )}
-    //                 >
-    //                   <MegaPanel category={cat} />
-    //                 </NavigationMenu.Content>
-    //               </>
-    //             ) : (
-    //               <NavigationMenu.Link asChild>
-    //                 <Link
-    //                   href={`/category/${cat.slug}`}
-    //                   className="inline-flex items-center rounded-full px-3.5 py-2 text-sm font-medium tracking-tight text-zinc-700 transition-colors hover:text-zinc-950"
-    //                 >
-    //                   {cat.name}
-    //                 </Link>
-    //               </NavigationMenu.Link>
-    //             )}
-    //           </NavigationMenu.Item>
-    //         ))}
+  // Escape closes mega.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMegaOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
-    //         {categories.length > 0 && (
-    //           <span className="mx-2 h-4 w-px bg-zinc-200" aria-hidden />
-    //         )}
+  // Reset visibility on route change so the header is always visible on entry.
+  useEffect(() => {
+    setHidden(false);
+    setAtTop(window.scrollY < AT_TOP_THRESHOLD);
+    lastScrollY.current = window.scrollY;
+  }, [pathname]);
 
-    //         {STATIC_LINKS.map((l) => (
-    //           <NavigationMenu.Item key={l.href}>
-    //             <NavigationMenu.Link asChild>
-    //               <Link
-    //                 href={l.href}
-    //                 className="inline-flex items-center rounded-full px-3.5 py-2 text-sm font-medium tracking-tight text-zinc-700 transition-colors hover:text-zinc-950"
-    //               >
-    //                 {l.label}
-    //               </Link>
-    //             </NavigationMenu.Link>
-    //           </NavigationMenu.Item>
-    //         ))}
-    //       </NavigationMenu.List>
+  // Track scroll direction + atTop.
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      setAtTop(y < AT_TOP_THRESHOLD);
 
-    //       {/* ── Right: Download + Mobile trigger ─────── */}
-    //       <div className="flex shrink-0 items-center gap-2">
-    //         <a
-    //           href={siteConfig.catalogueUrl}
-    //           download
-    //           className={cn(
-    //             "hidden items-center gap-2 rounded-full bg-zinc-900 px-4 py-2.5 text-xs font-medium tracking-tight text-white transition-all lg:inline-flex",
-    //             "hover:bg-zinc-800 hover:gap-2.5 hover:px-[1.05rem]",
-    //             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/30 focus-visible:ring-offset-2",
-    //           )}
-    //         >
-    //           <Download className="size-3.5" />
-    //           Download Catalogue
-    //         </a>
+      // Don't hide while mobile sheet is open.
+      if (mobileOpen) {
+        lastScrollY.current = y;
+        return;
+      }
 
-    //         {/* Mobile-only download icon */}
-    //         <a
-    //           href={siteConfig.catalogueUrl}
-    //           download
-    //           aria-label="Download catalogue"
-    //           className="grid size-10 place-items-center rounded-full text-zinc-700 transition-colors hover:bg-zinc-100 lg:hidden"
-    //         >
-    //           <Download className="size-4" />
-    //         </a>
+      if (y > lastScrollY.current && y > SCROLL_HIDE_THRESHOLD) {
+        setHidden(true); // scrolling down → slide up
+      } else if (y < lastScrollY.current) {
+        setHidden(false); // scrolling up → slide down
+      }
+      lastScrollY.current = y;
+    };
 
-    //         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-    //           <SheetTrigger asChild>
-    //             <button
-    //               type="button"
-    //               aria-label="Open menu"
-    //               className="grid size-10 place-items-center rounded-full text-zinc-700 transition-colors hover:bg-zinc-100 lg:hidden"
-    //             >
-    //               {mobileOpen ? (
-    //                 <X className="size-5" />
-    //               ) : (
-    //                 <Menu className="size-5" />
-    //               )}
-    //             </button>
-    //           </SheetTrigger>
-    //           <SheetContent
-    //             side="right"
-    //             className="w-full max-w-md bg-white p-0 sm:max-w-md"
-    //             showCloseButton={false}
-    //           >
-    //             <MobileMenu
-    //               categories={categories}
-    //               onClose={() => setMobileOpen(false)}
-    //             />
-    //           </SheetContent>
-    //         </Sheet>
-    //       </div>
-    //     </div>
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [mobileOpen]);
 
-    //     {/* ── Mega menu viewport (full-width, below header) ── */}
-    //     <div className="absolute left-0 right-0 top-full hidden justify-center lg:flex">
-    //       <NavigationMenu.Viewport
-    //         className={cn(
-    //           "relative w-full origin-top overflow-hidden border-b border-zinc-200 bg-white shadow-[0_24px_48px_-24px_rgba(15,15,15,0.18)]",
-    //           "h-[var(--radix-navigation-menu-viewport-height)] transition-[height,opacity] duration-300 ease-out",
-    //           "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:slide-in-from-top-1",
-    //           "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-1",
-    //           "data-[state=closed]:duration-150",
-    //         )}
-    //       />
-    //     </div>
-    //   </NavigationMenu.Root>
-    // </header>
-  );
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Mega menu panel
-// ────────────────────────────────────────────────────────────────────────────
-
-function MegaPanel({ category }: { category: CategoryNode }) {
-  const subCategories = category.children;
+  // Transparent only on home page top. Any open panel forces white.
+  const transparent = isHome && atTop && !mobileOpen && !megaOpen && !searchOpen;
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-6 py-10 lg:px-8 lg:py-12">
-      <div className="grid grid-cols-12 gap-8 lg:gap-12">
-        {/* Lead column */}
-        <div className="col-span-12 lg:col-span-3">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Collection
-          </p>
-          <h3 className="mt-2 text-2xl font-semibold tracking-tight text-zinc-900">
-            {category.name}
-          </h3>
-          {category.description && (
-            <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-              {category.description}
-            </p>
-          )}
-          <NavigationMenu.Link asChild>
-            <Link
-              href={`/category/${category.slug}`}
-              className="group/cta mt-6 inline-flex items-center gap-1.5 text-sm font-medium text-zinc-900 transition-all"
-            >
-              Shop all {category.name}
-              <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
-            </Link>
-          </NavigationMenu.Link>
-        </div>
+    <>
+      {/* Spacer — reserves layout space when the header is fixed + solid (non-home pages).
+          Home keeps the hero flush under the transparent header. */}
+      {!isHome && <div aria-hidden className="h-16 lg:h-20" />}
 
-        {/* Sub-categories grid */}
-        <div className="col-span-12 lg:col-span-9">
-          <div className="grid grid-cols-2 gap-x-8 gap-y-8 sm:grid-cols-3">
-            {subCategories.map((sub) => (
-              <div key={sub.id} className="space-y-3">
-                <NavigationMenu.Link asChild>
-                  <Link
-                    href={`/category/${sub.slug}`}
-                    className="group/sub inline-flex items-center gap-1 text-sm font-semibold tracking-tight text-zinc-900 transition-colors hover:text-zinc-700"
-                  >
-                    {sub.name}
-                    <ArrowRight className="size-3 opacity-0 transition-all duration-200 group-hover/sub:translate-x-0.5 group-hover/sub:opacity-100" />
-                  </Link>
-                </NavigationMenu.Link>
-                {sub.children.length > 0 && (
-                  <ul className="space-y-1.5">
-                    {sub.children.map((leaf) => (
-                      <li key={leaf.id}>
-                        <NavigationMenu.Link asChild>
-                          <Link
-                            href={`/category/${leaf.slug}`}
-                            className="text-sm text-zinc-600 transition-colors hover:text-zinc-900"
-                          >
-                            {leaf.name}
-                          </Link>
-                        </NavigationMenu.Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// Mobile menu
-// ────────────────────────────────────────────────────────────────────────────
-
-function MobileMenu({
-  categories,
-  onClose,
-}: {
-  categories: CategoryNode[];
-  onClose: () => void;
-}) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
-
-  const toggle = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-4">
+      <header
+      style={{
+        transitionProperty: "transform, background-color, border-color, color",
+        transitionDuration: "500ms, 300ms, 300ms, 300ms",
+        transitionTimingFunction:
+          "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out, ease-out",
+        transform: hidden ? "translateY(-100%)" : "translateY(0)",
+        willChange: "transform",
+      }}
+      className={cn(
+        "fixed inset-x-0 top-0 z-40",
+        transparent
+          ? "border-b border-transparent bg-transparent text-white"
+          : "border-b border-zinc-200 bg-white text-zinc-950 backdrop-blur ",
+      )}
+    >
+      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 md:px-6 lg:h-20 lg:px-[4vw]">
+        {/* Logo */}
         <Link
           href="/"
-          onClick={onClose}
-          className="text-lg font-semibold tracking-tight text-zinc-900"
+          className="text-lg font-semibold uppercase transition-opacity hover:opacity-70 lg:text-xl"
         >
           {siteConfig.name}
         </Link>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close menu"
-          className="grid size-10 place-items-center rounded-full text-zinc-700 transition-colors hover:bg-zinc-100"
-        >
-          <X className="size-5" />
-        </button>
-      </div>
 
-      {/* Scrollable nav */}
-      <nav className="flex-1 overflow-y-auto px-4 py-6">
-        <ul className="space-y-1">
-          {categories.map((cat) => {
-            const hasChildren = cat.children.length > 0;
-            const open = expanded.has(cat.id);
-
-            return (
-              <li key={cat.id} className="border-b border-zinc-100 last:border-b-0">
-                {hasChildren ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => toggle(cat.id)}
-                      aria-expanded={open}
-                      className="flex w-full items-center justify-between gap-3 py-4 text-left"
-                    >
-                      <span className="text-base font-medium tracking-tight text-zinc-900">
-                        {cat.name}
-                      </span>
-                      <ChevronDown
-                        className={cn(
-                          "size-4 text-zinc-400 transition-transform duration-200",
-                          open && "rotate-180 text-zinc-700",
-                        )}
-                      />
-                    </button>
-                    {open && (
-                      <div className="animate-in fade-in-0 slide-in-from-top-1 pb-4 duration-200">
-                        <Link
-                          href={`/category/${cat.slug}`}
-                          onClick={onClose}
-                          className="group flex items-center justify-between rounded-lg bg-zinc-50 px-3 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-100"
-                        >
-                          Shop all {cat.name}
-                          <ArrowRight className="size-3.5 text-zinc-500 transition-transform group-hover:translate-x-0.5" />
-                        </Link>
-                        <ul className="mt-2 space-y-0.5 pl-3">
-                          {cat.children.map((sub) => (
-                            <li key={sub.id}>
-                              <Link
-                                href={`/category/${sub.slug}`}
-                                onClick={onClose}
-                                className="flex items-center justify-between rounded-md px-3 py-2 text-sm text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                              >
-                                <span>{sub.name}</span>
-                                <ChevronRight className="size-3.5 text-zinc-400" />
-                              </Link>
-                              {sub.children.length > 0 && (
-                                <ul className="ml-2 mt-0.5 space-y-0.5 border-l border-zinc-200 pl-3">
-                                  {sub.children.map((leaf) => (
-                                    <li key={leaf.id}>
-                                      <Link
-                                        href={`/category/${leaf.slug}`}
-                                        onClick={onClose}
-                                        className="block rounded-md px-3 py-1.5 text-sm text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                                      >
-                                        {leaf.name}
-                                      </Link>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <Link
-                    href={`/category/${cat.slug}`}
-                    onClick={onClose}
-                    className="block py-4 text-base font-medium tracking-tight text-zinc-900"
-                  >
-                    {cat.name}
-                  </Link>
+        {/* Nav — right (desktop) */}
+        <nav className="hidden items-center gap-8 lg:flex">
+          {STATIC_LINKS.map((l) => {
+            const active = pathname === l.href;
+            const isShop = l.href === "/category";
+            const showUnderline = active || (isShop && megaOpen);
+            const linkEl = (
+              <Link
+                href={l.href}
+                aria-expanded={isShop ? megaOpen : undefined}
+                className={cn(
+                  "relative inline-flex items-center gap-1 text-sm font-medium tracking-tight transition-colors",
+                  "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:scale-x-0 after:transition-transform after:duration-300 after:ease-out after:content-['']",
+                  "hover:after:scale-x-100",
+                  transparent
+                    ? cn(
+                        "after:bg-white",
+                        showUnderline ? "text-white after:scale-x-100" : "text-white hover:text-white",
+                      )
+                    : cn(
+                        "after:bg-zinc-950",
+                        showUnderline ? "text-zinc-950 after:scale-x-100" : "text-zinc-600 hover:text-zinc-950",
+                      ),
                 )}
-              </li>
+              >
+                {l.label}
+                {isShop && (
+                  <ChevronDown
+                    aria-hidden
+                    className={cn(
+                      "size-3.5 transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                      megaOpen ? "rotate-180" : "rotate-0",
+                      transparent ? "text-white/70" : "text-zinc-500",
+                    )}
+                  />
+                )}
+              </Link>
+            );
+
+            return isShop ? (
+              <div
+                key={l.href}
+                onMouseEnter={openMega}
+                onMouseLeave={() => scheduleCloseMega()}
+                className="relative flex items-center"
+              >
+                {linkEl}
+              </div>
+            ) : (
+              <div key={l.href}>{linkEl}</div>
             );
           })}
-        </ul>
 
-        <div className="mt-6 space-y-1 border-t border-zinc-200 pt-6">
-          {STATIC_LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={onClose}
-              className="flex items-center justify-between rounded-lg px-3 py-3 text-sm font-medium text-zinc-800 transition-colors hover:bg-zinc-100"
+          {/* Search trigger — desktop */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Open search"
+            className={cn(
+              "ml-2 grid size-9 place-items-center transition-colors",
+              transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
+            )}
+          >
+            <Search className="size-4" />
+          </button>
+        </nav>
+
+        {/* Mobile actions — search + hamburger */}
+        <div className="flex items-center gap-1 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Open search"
+            className={cn(
+              "grid size-10 place-items-center transition-colors",
+              transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
+            )}
+          >
+            <Search className="size-5" />
+          </button>
+
+        {/* Hamburger — right (mobile) */}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <button
+              type="button"
+              aria-label="Open menu"
+              className={cn(
+                "grid size-10 place-items-center transition-colors lg:hidden",
+                transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
+              )}
             >
-              {l.label}
-              <ChevronRight className="size-4 text-zinc-400" />
+              <Menu className="size-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-full max-w-sm bg-white p-0" showCloseButton={false}>
+            <div className="flex h-full flex-col">
+              <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-4">
+                <span className="text-lg font-semibold tracking-tight text-zinc-950">
+                  {siteConfig.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Close menu"
+                  className="grid size-10 place-items-center text-zinc-900 transition-colors hover:bg-zinc-100"
+                >
+                  <X className="size-5" />
+                </button>
+              </div>
+              <nav className="flex-1 overflow-y-auto px-4 py-6">
+                <ul className="space-y-1">
+                  {STATIC_LINKS.map((l) => {
+                    const active = pathname === l.href;
+                    return (
+                      <li key={l.href}>
+                        <Link
+                          href={l.href}
+                          onClick={() => setMobileOpen(false)}
+                          className={cn(
+                            "block border-b border-zinc-100 py-4 text-base font-medium tracking-tight transition-colors",
+                            active ? "text-zinc-950" : "text-zinc-700 hover:text-zinc-950",
+                          )}
+                        >
+                          {l.label}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+            </div>
+          </SheetContent>
+        </Sheet>
+        </div>
+      </div>
+
+      {/* ── Mega menu — full width, sits below the header bar ─────────── */}
+      <div
+        onMouseEnter={openMega}
+        onMouseLeave={() => scheduleCloseMega()}
+        aria-hidden={!megaOpen}
+        style={{
+          transitionProperty: "opacity, translate",
+          transitionDuration: "400ms",
+          transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+          opacity: megaOpen ? 1 : 0,
+          translate: megaOpen ? "0 0" : "0 -0.75rem",
+          pointerEvents: megaOpen ? "auto" : "none",
+        }}
+        className="absolute inset-x-0 top-full hidden border-t border-zinc-200 bg-white lg:block"
+      >
+        <MegaPanel onItemClick={() => setMegaOpen(false)} />
+      </div>
+    </header>
+
+      {/* Search modal — sits outside the header so it stays put when header slides */}
+      <HeaderSearchModal
+        open={searchOpen}
+        query={searchQuery}
+        onQueryChange={setSearchQuery}
+        onClose={() => setSearchOpen(false)}
+      />
+    </>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Mega panel — full-width, editorial layout
+// ────────────────────────────────────────────────────────────────────────────
+
+function MegaPanel({ onItemClick }: { onItemClick: () => void }) {
+  const featured = categoryTiles.slice(0, 2);
+  const list = categoryTiles;
+
+  return (
+    <div className="mx-auto max-w-[1600px] px-4 py-10 md:px-6 lg:px-[4vw] lg:py-12">
+      <div className="grid grid-cols-12 gap-8 lg:gap-12">
+        {/* Left — heading + category list */}
+        <div className="col-span-12 lg:col-span-5">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+            Shop by Category
+          </p>
+          <h3 className="mt-3 text-3xl font-normal tracking-tight text-zinc-950">
+            Every collection.
+          </h3>
+          <p className="mt-3 max-w-sm text-sm text-zinc-600">
+            From everyday totes to occasion clutches — find the bag that moves with you.
+          </p>
+
+          <ul className="mt-8 grid grid-cols-2 gap-x-8 gap-y-2.5">
+            {list.map((tile) => (
+              <li key={tile.id}>
+                <Link
+                  href={tile.href}
+                  onClick={onItemClick}
+                  className="group/item inline-flex items-center gap-1.5 text-sm font-medium tracking-tight text-zinc-700 transition-colors hover:text-zinc-950"
+                >
+                  {tile.name}
+                  <ArrowUpRight
+                    className="size-3.5 -translate-x-1 opacity-0 transition-all duration-200 ease-out group-hover/item:translate-x-0 group-hover/item:opacity-100"
+                    aria-hidden
+                  />
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <Link
+            href="/category"
+            onClick={onItemClick}
+            className="group/all mt-8 inline-flex items-center gap-1.5 border-b border-zinc-900 pb-0.5 text-sm font-medium tracking-tight text-zinc-950"
+          >
+            View all categories
+            <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover/all:-translate-y-0.5 group-hover/all:translate-x-0.5" />
+          </Link>
+        </div>
+
+        {/* Right — featured cards */}
+        <div className="col-span-12 grid grid-cols-2 gap-4 lg:col-span-7">
+          {featured.map((tile) => (
+            <Link
+              key={tile.id}
+              href={tile.href}
+              onClick={onItemClick}
+              className="group/feat relative block aspect-[4/5] overflow-hidden"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={"/sling.jpg"}
+                alt={tile.name}
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 size-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/feat:scale-[1.04]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
+              <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5">
+                <div>
+                  <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-white/75">
+                    {tile.kicker ?? "Featured"}
+                  </p>
+                  <h4 className="mt-1.5 text-lg font-medium tracking-tight text-white">
+                    {tile.name}
+                  </h4>
+                </div>
+                <ArrowUpRight
+                  className="size-4 shrink-0 text-white/75 transition-all duration-300 ease-out group-hover/feat:-translate-y-0.5 group-hover/feat:translate-x-0.5 group-hover/feat:text-white"
+                  aria-hidden
+                />
+              </div>
             </Link>
           ))}
         </div>
-      </nav>
-
-      {/* Footer CTA */}
-      <div className="border-t border-zinc-200 p-4">
-        <a
-          href={siteConfig.catalogueUrl}
-          download
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-zinc-900 px-4 py-3 text-sm font-medium tracking-tight text-white transition-colors hover:bg-zinc-800"
-        >
-          <Download className="size-4" />
-          Download Catalogue
-        </a>
       </div>
     </div>
   );
