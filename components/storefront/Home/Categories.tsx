@@ -41,11 +41,15 @@ export default function Categories() {
     <section className="bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="text-center">
+        <div className="text-center" data-aos="fade-up">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
             Shop by Category
           </p>
-          <h2 className="mt-3 text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl">
+          <h2
+            className="mt-3 text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl"
+            data-aos="fade-up"
+            data-aos-delay="80"
+          >
             Find your everyday companion.
           </h2>
         </div>
@@ -58,7 +62,7 @@ export default function Categories() {
           }
         `}</style>
 
-        <div className="relative mt-12 lg:mt-16">
+        <div className="relative mt-12 lg:mt-16" data-aos="fade-up" data-aos-delay="160">
           {/* Embla viewport */}
           <div ref={emblaRef} className="overflow-hidden">
             <div
@@ -87,7 +91,7 @@ export default function Categories() {
         </div>
 
         {/* View all */}
-        <div className="mt-10 flex justify-center lg:mt-12">
+        <div className="mt-10 flex justify-center lg:mt-12" data-aos="fade-up">
           <Link
             href="/category"
             className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
@@ -134,7 +138,7 @@ function TileCard({ tile }: { tile: CategoryTile }) {
     <Link href={tile.href} className="perry-cat-slide group/card block">
       <div
         className={cn(
-          "relative aspect-[4/5] overflow-hidden",
+          "relative aspect-[4/5.5] overflow-hidden",
           tile.gradient ?? "bg-zinc-100",
         )}
       >

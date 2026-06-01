@@ -19,7 +19,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Classic Leather Tote",
     href: "/products/classic-leather-tote",
     imageUrl:
-      "https://images.unsplash.com/photo-1564485377539-4af72d1f6a2f?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/SkybagsNEXTRALAPTOPBACKPACK01_540x.png?v=1705658262",
     pricePaise: 499900,
   },
   {
@@ -27,7 +27,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "City Sling",
     href: "/products/city-sling",
     imageUrl:
-      "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/LPBPVAN2BLK_1_540x.png?v=1701858512",
     pricePaise: 299900,
   },
   {
@@ -35,7 +35,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "The Weekender",
     href: "/products/weekender",
     imageUrl:
-      "https://images.unsplash.com/photo-1581605405669-fcdf81165afa?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/LPBPCHSGRY_2_1800x1800_ddd169a4-4221-4c97-8b22-1281b9b9fce8_540x.png?v=1699961040",
     pricePaise: 749900,
   },
   {
@@ -43,7 +43,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Minimalist Wallet",
     href: "/products/minimalist-wallet",
     imageUrl:
-      "https://images.unsplash.com/photo-1559563458-527698bf5295?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/LPBPCHSGRY_2_1800x1800_ddd169a4-4221-4c97-8b22-1281b9b9fce8_540x.png?v=1699961040",
     pricePaise: 149900,
   },
   {
@@ -51,7 +51,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Heritage Satchel",
     href: "/products/heritage-satchel",
     imageUrl:
-      "https://images.unsplash.com/photo-1606522754091-a3bbf9ad4cb3?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/1_5_2973ffa8-0955-489e-82f1-2f851d1833a0_540x.png?v=1711552307",
     pricePaise: 599900,
   },
   {
@@ -59,7 +59,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Card Holder",
     href: "/products/card-holder",
     imageUrl:
-      "https://images.unsplash.com/photo-1532619675605-1ede6c2ed2b0?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/work5_540x.png?v=1693899583",
     pricePaise: 89900,
   },
   {
@@ -67,7 +67,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Field Messenger",
     href: "/products/field-messenger",
     imageUrl:
-      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/1_7_64042750-8893-4b36-b44f-b7f0338cf7f4_540x.png?v=1711552135",
     pricePaise: 649900,
     inStock: false,
   },
@@ -76,7 +76,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Daily Backpack",
     href: "/products/daily-backpack",
     imageUrl:
-      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/1_7_64042750-8893-4b36-b44f-b7f0338cf7f4_540x.png?v=1711552135",
     pricePaise: 549900,
   },
   {
@@ -84,7 +84,7 @@ export const newArrivals: NewArrivalCard[] = [
     name: "Classic Leather Tote",
     href: "/products/classic-leather-tote",
     imageUrl:
-      "https://images.unsplash.com/photo-1564485377539-4af72d1f6a2f?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/1_e4625668-807a-4e65-b21c-38fb10ee3d5f_1800x1800-removebg-preview_540x.png?v=1778665488",
     pricePaise: 499900,
   },
   {
@@ -92,23 +92,8 @@ export const newArrivals: NewArrivalCard[] = [
     name: "City Sling",
     href: "/products/city-sling",
     imageUrl:
-      "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600&auto=format&fit=crop&q=75",
+      "https://skybags.co.in/cdn/shop/files/1_6e1d2a67-f46e-4fc1-b6d4-8d402911a2fa_720x-removebg-preview_540x.png?v=1778665264",
     pricePaise: 299900,
   },
-  {
-    id: "weekender",
-    name: "The Weekender",
-    href: "/products/weekender",
-    imageUrl:
-      "https://images.unsplash.com/photo-1581605405669-fcdf81165afa?w=600&auto=format&fit=crop&q=75",
-    pricePaise: 749900,
-  },
-  {
-    id: "minimalist-wallet",
-    name: "Minimalist Wallet",
-    href: "/products/minimalist-wallet",
-    imageUrl:
-      "https://images.unsplash.com/photo-1559563458-527698bf5295?w=600&auto=format&fit=crop&q=75",
-    pricePaise: 149900,
-  },
+  
 ];

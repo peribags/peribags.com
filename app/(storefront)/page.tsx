@@ -39,7 +39,7 @@ export default function HomePage() {
           </>
         }
         body="Every Perry Bag is cut, stitched, and finished by a small team of artisans at our workshop. We work with full-grain leather chosen for character — pieces that wear in, not out."
-        imageSrc="https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=1200&auto=format&fit=crop&q=70"
+        imageSrc="/19331.jpg"
         imageAlt="Hands working leather at the Perry Bags workshop"
         ctaHref="/about"
         ctaLabel="Read our story"
@@ -55,7 +55,7 @@ export default function HomePage() {
           </>
         }
         body="We pick full-grain hides for their natural marks — every bag carries a fingerprint of the animal it came from. With care, the leather darkens, softens, and earns a patina that's entirely yours."
-        imageSrc="https://images.unsplash.com/photo-1532619675605-1ede6c2ed2b0?w=1200&auto=format&fit=crop&q=70"
+        imageSrc="/19331.jpg"
         imageAlt="Close-up of full-grain leather"
         imageSide="right"
         ctaHref="/about"
@@ -66,9 +66,9 @@ export default function HomePage() {
       <Trustmarks />
 
       <ReelsShowcase />
-      
+
       <InstagramFeed />
-      
+
       <CatalogueCTA />
     </>
   );

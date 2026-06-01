@@ -1,110 +1,61 @@
 import Link from "next/link";
-import type { Route } from "next";
 import { ArrowUpRight, ImageIcon } from "lucide-react";
-import type { NewArrivalCard } from "@/lib/new-arrivals";
+import type { ProductDetail } from "@/lib/product-detail";
 import { cn } from "@/lib/utils";
 
-export type ProductShowcaseProps = {
-  /** Small uppercase text above the heading. */
-  kicker?: string;
-  /** Section heading. */
-  heading: string;
-  /** Optional paragraph below the heading. */
-  description?: string;
-  /** CSS background color (e.g. "#FAF7F1", "white"). Defaults to white. */
-  background?: string;
-  /** Products to render. */
-  products: NewArrivalCard[];
-  /** Cap the number of products shown. Default: all. */
-  limit?: number;
-  /** If provided, renders a centered "View all" CTA below the grid. */
-  viewAllHref?: Route;
-  viewAllLabel?: string;
+type Props = {
+  products: ProductDetail[];
+  heading?: string;
 };
 
-export default function ProductShowcase({
-  kicker,
-  heading,
-  description,
-  background,
+export default function RelatedProducts({
   products,
-  limit,
-  viewAllHref,
-  viewAllLabel = "View all",
-}: ProductShowcaseProps) {
-  const items = limit != null ? products.slice(0, limit) : products;
-  if (items.length === 0) return null;
+  heading = "You may also like",
+}: Props) {
+  if (products.length === 0) return null;
 
   return (
-    <section style={background ? { backgroundColor: background } : undefined}>
+    <section className="border-t border-zinc-200 bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
-        {/* Centered heading */}
-        <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
-          {kicker && (
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-              {kicker}
-            </p>
-          )}
-          <h2
-            className={cn(
-              "text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl",
-              kicker && "mt-2",
-            )}
-          >
+        <div
+          className="flex items-end justify-between gap-6 border-b border-zinc-200 pb-5"
+          data-aos="fade-up"
+        >
+          <h2 className="text-2xl font-medium tracking-tight text-zinc-950 sm:text-3xl">
             {heading}
           </h2>
-          {description && (
-            <p className="mt-4 text-sm text-zinc-600 sm:text-base">{description}</p>
-          )}
         </div>
 
-        {/* Grid — 2 col mobile, 4 col desktop */}
-        <div className="mt-12 grid grid-cols-2 gap-x-4 gap-y-12 lg:mt-16 lg:grid-cols-5 lg:gap-x-6 lg:gap-y-16">
-          {items.map((p, i) => (
+        <div className="mt-10 grid grid-cols-2 gap-x-4 gap-y-12 lg:mt-12 lg:grid-cols-4 lg:gap-x-6 lg:gap-y-16">
+          {products.map((p, i) => (
             <div
               key={p.id}
               data-aos="fade-up"
-              data-aos-delay={(i % 5) * 50}
+              data-aos-delay={(i % 4) * 50}
             >
-              <ProductCard product={p} />
+              <RelatedCard product={p} />
             </div>
           ))}
         </div>
-
-        {/* Optional View all CTA */}
-        {viewAllHref && (
-          <div className="mt-12 flex justify-center lg:mt-16" data-aos="fade-up">
-            <Link
-              href={viewAllHref}
-              className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
-            >
-              {viewAllLabel}
-              <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            </Link>
-          </div>
-        )}
       </div>
     </section>
   );
 }
 
-function ProductCard({ product }: { product: NewArrivalCard }) {
-  const inStock = product.inStock ?? true;
+function RelatedCard({ product }: { product: ProductDetail }) {
+  const inStock = product.inStock;
 
   return (
     <Link href={product.href} className="group/card block">
-      {/* Image — cream tile frames the (often white-bg) product photo */}
       <div
         className="relative aspect-[3/4.25] overflow-hidden"
         style={{ backgroundColor: "#F5F1EA" }}
       >
         {product.imageUrl ? (
-          // Padded centered container — product floats inside the cream frame.
-          <div className="absolute inset-0 grid place-items-center ">
+          <div className="absolute inset-0 grid place-items-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={product.imageUrl}
-              // src={"/product.jpg"}
               alt={product.name}
               loading="lazy"
               decoding="async"
@@ -120,7 +71,6 @@ function ProductCard({ product }: { product: NewArrivalCard }) {
           </div>
         )}
 
-        {/* Top-left tag */}
         <span
           className={cn(
             "absolute left-3 top-3 inline-flex items-center px-2 py-1 text-[10px] font-medium uppercase tracking-[0.2em]",
@@ -130,7 +80,6 @@ function ProductCard({ product }: { product: NewArrivalCard }) {
           {inStock ? "New" : "Out of stock"}
         </span>
 
-        {/* Hover quick-look pill — desktop only */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden p-3 md:block">
           <div
             style={{
@@ -150,7 +99,6 @@ function ProductCard({ product }: { product: NewArrivalCard }) {
         </div>
       </div>
 
-      {/* Name — centered with underline-grow on hover (md+) */}
       <div className="mt-5 text-center">
         <h3 className="text-sm font-normal tracking-tight text-zinc-950 sm:text-base">
           <span

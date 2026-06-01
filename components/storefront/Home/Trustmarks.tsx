@@ -59,7 +59,7 @@ export default function Trustmarks() {
     <section style={{ backgroundColor: "#FAF7F1" }}>
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
             Why Perry Bags
           </p>
@@ -70,10 +70,12 @@ export default function Trustmarks() {
 
         {/* Centered grid */}
         <div className="mt-14 grid grid-cols-1 gap-12 md:mt-16 md:grid-cols-3 md:gap-8 lg:mt-20 lg:gap-12">
-          {items.map(({ Icon, kicker, title, description }) => (
+          {items.map(({ Icon, kicker, title, description }, i) => (
             <div
               key={kicker}
               className="flex flex-col items-center text-center"
+              data-aos="fade-up"
+              data-aos-delay={120 + i * 120}
             >
               {/* Icon in outlined circle with white inner — pops softly against the cream bg */}
               <div className="grid size-16 place-items-center rounded-full border border-zinc-900/20 bg-white text-zinc-900 shadow-[0_8px_24px_-16px_rgba(15,15,15,0.18)]">

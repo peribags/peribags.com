@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RevealImage } from "@/components/storefront/Home/RevealImage";
 
 export type EditorialStoryProps = {
   kicker?: string;
@@ -30,6 +31,8 @@ export default function EditorialStory({
   background,
 }: EditorialStoryProps) {
   const imageLeft = imageSide === "left";
+  // Curtain slides off TOWARD the outer edge (away from the copy column).
+  const slideFrom: "left" | "right" = imageLeft ? "left" : "right";
 
   return (
     <section style={background ? { backgroundColor: background } : undefined}>
@@ -42,16 +45,12 @@ export default function EditorialStory({
               imageLeft ? "lg:order-1" : "lg:order-2",
             )}
           >
-            <div className="relative aspect-[5/4] overflow-hidden bg-zinc-100">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={imageSrc}
-                alt={imageAlt}
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 size-full object-cover"
-              />
-            </div>
+            <RevealImage
+              src={imageSrc}
+              alt={imageAlt}
+              slideFrom={slideFrom}
+              aspect="aspect-[4/5] sm:aspect-[5/4]"
+            />
           </div>
 
           {/* Copy */}
@@ -60,6 +59,8 @@ export default function EditorialStory({
               "col-span-12 lg:col-span-5 lg:self-center",
               imageLeft ? "lg:order-2" : "lg:order-1",
             )}
+            data-aos="fade-up"
+            data-aos-delay="200"
           >
             {kicker && (
               <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">

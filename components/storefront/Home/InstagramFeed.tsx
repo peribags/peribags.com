@@ -69,7 +69,7 @@ export default function InstagramFeed() {
     <section className="bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
             @perrybags
           </p>
@@ -82,13 +82,15 @@ export default function InstagramFeed() {
         </div>
 
         {/* Grid — 3 cols mobile, 6 cols desktop */}
-        <div className="mt-12 grid grid-cols-3 gap-2 md:gap-3 lg:mt-14 lg:grid-cols-6">
-          {posts.map((post) => (
+        <div className="mt-10 grid grid-cols-3 gap-1.5 sm:gap-2 md:mt-12 md:gap-3 lg:mt-14 lg:grid-cols-6">
+          {posts.map((post, i) => (
             <a
               key={post.id}
               href={post.href}
               target="_blank"
               rel="noreferrer"
+              data-aos="fade-up"
+              data-aos-delay={(i % 6) * 50}
               className="group/post relative block aspect-4/5.5 overflow-hidden bg-zinc-100"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -118,7 +120,7 @@ export default function InstagramFeed() {
         </div>
 
         {/* Follow CTA */}
-        <div className="mt-10 flex justify-center lg:mt-12">
+        <div className="mt-10 flex justify-center lg:mt-12" data-aos="fade-up">
           <a
             href="https://instagram.com"
             target="_blank"

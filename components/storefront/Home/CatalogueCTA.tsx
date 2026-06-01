@@ -16,10 +16,10 @@ export default function CatalogueCTA() {
         aria-hidden
       />
 
-      <div className="relative mx-auto max-w-[1600px] px-4 py-20 md:px-6 md:py-24 lg:px-[4vw] lg:py-28">
+      <div className="relative mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-24 lg:px-[4vw] lg:py-28">
         <div className="grid grid-cols-12 items-end gap-8 lg:gap-12">
           {/* Heading + description */}
-          <div className="col-span-12 lg:col-span-7">
+          <div className="col-span-12 lg:col-span-7" data-aos="fade-up">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/60">
               The Edit
             </p>
@@ -34,7 +34,11 @@ export default function CatalogueCTA() {
           </div>
 
           {/* CTA */}
-          <div className="col-span-12 lg:col-span-5 lg:justify-self-end">
+          <div
+            className="col-span-12 lg:col-span-5 lg:justify-self-end"
+            data-aos="fade-up"
+            data-aos-delay="120"
+          >
             <a
               href={siteConfig.catalogueUrl}
               download

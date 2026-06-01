@@ -38,7 +38,7 @@ export default function Hero() {
       aria-roledescription="carousel"
       aria-label="Featured collections"
     >
-      <div className="relative h-[100svh]">
+      <div className="relative h-[60vh] lg:h-[100svh]">
         {slides.map((slide, i) => (
           <SlideView
             key={slide.id}
@@ -202,7 +202,7 @@ function SlideView({
               className={cn(
                 TEXT_ENTRY,
                 "data-[active=true]:delay-[300ms]",
-                "mt-5 max-w-xl text-base font-normal leading-relaxed text-white/85 sm:text-lg",
+                "mt-5 max-w-xl text-sm font-normal leading-relaxed text-white/85 sm:text-lg",
               )}
             >
               {slide.description}

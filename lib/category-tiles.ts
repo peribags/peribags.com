@@ -34,15 +34,15 @@ export const categoryTiles: CategoryTile[] = [
       "https://plus.unsplash.com/premium_photo-1679314408041-45d1a3c45dee?w=600&auto=format&fit=crop&q=70",
     gradient: "bg-gradient-to-br from-emerald-900 to-zinc-950",
   },
-  {
-    id: "crossbody",
-    name: "Crossbody",
-    kicker: "Hands-free",
-    href: "/category/crossbody",
-    imageUrl:
-      "https://images.unsplash.com/photo-1597358371607-5987dd7da3d6?w=600&auto=format&fit=crop&q=70",
-    gradient: "bg-gradient-to-br from-rose-900 to-zinc-950",
-  },
+  // {
+  //   id: "crossbody",
+  //   name: "Crossbody",
+  //   kicker: "Hands-free",
+  //   href: "/category/crossbody",
+  //   imageUrl:
+  //     "https://images.unsplash.com/photo-1597358371607-5987dd7da3d6?w=600&auto=format&fit=crop&q=70",
+  //   gradient: "bg-gradient-to-br from-rose-900 to-zinc-950",
+  // },
   {
     id: "wallets",
     name: "Wallets",

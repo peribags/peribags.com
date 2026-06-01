@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "../globals.css";
 import { StorefrontHeader } from "@/components/storefront/header";
 import { StorefrontFooter } from "@/components/storefront/footer";
+import { AOSProvider } from "@/components/storefront/aos-provider";
 import { siteConfig } from "@/lib/site";
 
 const inter = Inter({
@@ -24,7 +25,8 @@ export default function StorefrontRootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-white text-zinc-900 font-sans">
+      <body className="min-h-full flex flex-col bg-white text-zinc-900 font-sans overflow-x-clip">
+        <AOSProvider />
         <StorefrontHeader />
         <main className="flex-1">{children}</main>
         <StorefrontFooter />

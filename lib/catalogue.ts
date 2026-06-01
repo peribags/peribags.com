@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import { newArrivals } from "@/lib/new-arrivals";
 
 export type CatalogueProduct = {
   id: string;
@@ -62,6 +63,23 @@ export const sortOptions: { value: SortValue; label: string }[] = [
   { value: "price-high", label: "Price: High to Low" },
 ];
 
+export type PriceRange = {
+  id: string;
+  label: string;
+  /** Min price (inclusive) in paise. */
+  min: number;
+  /** Max price (exclusive) in paise. `null` = no upper bound. */
+  max: number | null;
+};
+
+export const priceRanges: PriceRange[] = [
+  { id: "under-1500", label: "Under ₹1,500", min: 0, max: 150000 },
+  { id: "1500-3000", label: "₹1,500 – ₹3,000", min: 150000, max: 300000 },
+  { id: "3000-5000", label: "₹3,000 – ₹5,000", min: 300000, max: 500000 },
+  { id: "5000-7500", label: "₹5,000 – ₹7,500", min: 500000, max: 750000 },
+  { id: "above-7500", label: "Above ₹7,500", min: 750000, max: null },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Category copy
 // ─────────────────────────────────────────────────────────────────────────────
@@ -86,65 +104,33 @@ export const categoryDescriptions: Record<string, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mock product generator
+// Product source — same shop catalogue as the homepage ProductShowcase.
+// Each newArrivals item is replicated and tagged with rotating attributes so
+// the listing has enough variety to filter & paginate against.
 // ─────────────────────────────────────────────────────────────────────────────
-
-const namePrefixesBySlug: Record<string, string[]> = {
-  totes: ["Classic", "Market", "Day", "Studio", "Carry", "Heritage", "Soft", "Mini"],
-  slings: ["City", "Compact", "Atlas", "Daily", "Field", "Studio", "Ladies", "Pocket"],
-  backpacks: ["Daily", "Atlas", "Voyager", "Studio", "Field", "Trail", "City", "Mini"],
-  crossbody: ["Day", "Studio", "Compact", "Atlas", "Mini", "Soft", "Carry", "Ladies"],
-  wallets: ["Bifold", "Card", "Long", "Pocket", "Notebook", "Slim", "Heritage", "Field"],
-  clutches: ["Evening", "Envelope", "Studio", "Heritage", "Mini", "Structured", "Soft", "Ladies"],
-  briefcases: ["Atlas", "Slim", "Studio", "Field", "Heritage", "Soft", "Day", "City"],
-  travel: ["Weekender", "Duffel", "Voyager", "Field", "Atlas", "Studio", "City", "Heritage"],
-};
-
-const nameSuffixBySlug: Record<string, string> = {
-  totes: "Tote",
-  slings: "Sling",
-  backpacks: "Pack",
-  crossbody: "Crossbody",
-  wallets: "Wallet",
-  clutches: "Clutch",
-  briefcases: "Brief",
-  travel: "Carryall",
-};
-
-const imagePool = [
-  "https://images.unsplash.com/photo-1564485377539-4af72d1f6a2f?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1581605405669-fcdf81165afa?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1559563458-527698bf5295?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1606522754091-a3bbf9ad4cb3?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1532619675605-1ede6c2ed2b0?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&auto=format&fit=crop&q=75",
-  "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=600&auto=format&fit=crop&q=75",
-];
 
 function pick<T>(arr: T[], i: number): T {
   return arr[i % arr.length];
 }
 
 export function getCategoryProducts(slug: string): CatalogueProduct[] {
-  const prefixes = namePrefixesBySlug[slug] ?? ["Style"];
-  const suffix = nameSuffixBySlug[slug] ?? "";
   const subs = (subcategoriesBySlug[slug] ?? ["all"]).filter((s) => s !== "all");
-  const total = 32; // a fuller catalogue so infinite scroll has something to do
+  const total = 24;
+  const source = newArrivals.length > 0 ? newArrivals : [];
 
   return Array.from({ length: total }, (_, i) => {
-    const prefix = pick(prefixes, i);
-    const variant = i >= prefixes.length ? ` 0${Math.floor(i / prefixes.length) + 1}` : "";
+    const src = pick(source, i);
+    const variantNo = Math.floor(i / source.length);
+    const variant = variantNo > 0 ? ` 0${variantNo + 1}` : "";
+
     return {
-      id: `${slug}-${i + 1}`,
-      name: `${prefix} ${suffix}${variant}`.trim(),
-      href: `/products/${slug}-${i + 1}` as Route,
-      imageUrl: pick(imagePool, i),
-      pricePaise: 199900 + (i % 8) * 70000,
-      inStock: i % 9 !== 0,
-      subcategory: pick(subs, i),
+      id: `${slug}-${src.id}-${i + 1}`,
+      name: `${src.name}${variant}`.trim(),
+      href: `/products/${src.id}` as Route,
+      imageUrl: src.imageUrl ?? "",
+      pricePaise: src.pricePaise,
+      inStock: src.inStock ?? i % 9 !== 0,
+      subcategory: subs.length > 0 ? pick(subs, i) : "all",
       material: pick(materialOptions, i),
       colors: [pick(colorOptions, i).name, pick(colorOptions, i + 2).name],
     };

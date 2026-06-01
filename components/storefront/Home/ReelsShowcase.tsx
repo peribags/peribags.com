@@ -1,74 +1,56 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import ClassNames from "embla-carousel-class-names";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Reel = {
-  id: string;
-  imageUrl: string;
-  href: string;
-  caption?: string;
+  id: number;
+  videoUrl: string;
 };
 
 const reels: Reel[] = [
   {
-    id: "r1",
-    imageUrl:
-      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&auto=format&fit=crop&q=70",
-    href: "#",
-    caption: "Inside the workshop",
+    id: 1,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/f8848f7cc3014e34b1afa09b5c111f98.mp4",
   },
   {
-    id: "r2",
-    imageUrl:
-      "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600&auto=format&fit=crop&q=70",
-    href: "#",
-    caption: "The City Sling",
+    id: 2,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/34854670c5094add92c262e6fb1b97e8.mp4",
   },
   {
-    id: "r3",
-    imageUrl:
-      "https://images.unsplash.com/photo-1559563458-527698bf5295?w=700&auto=format&fit=crop&q=75",
-    href: "#",
-    caption: "Saddle-stitch close-up",
+    id: 3,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/34df93aa735249bd8618679422eae3b9.mp4",
   },
   {
-    id: "r4",
-    imageUrl:
-      "https://images.unsplash.com/photo-1564485377539-4af72d1f6a2f?w=600&auto=format&fit=crop&q=70",
-    href: "#",
-    caption: "Tote on the move",
+    id: 4,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/1786b9cbfda04aa6b42192523971e6fb.mp4",
   },
   {
-    id: "r5",
-    imageUrl:
-      "https://images.unsplash.com/photo-1606522754091-a3bbf9ad4cb3?w=600&auto=format&fit=crop&q=70",
-    href: "#",
-    caption: "New material study",
+    id: 5,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/dab6cababdf8467897f12f0d9c3ae496.mp4",
   },
   {
-    id: "r6",
-    imageUrl:
-      "https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=600&auto=format&fit=crop&q=70",
-    href: "#",
-    caption: "Inside the workshop",
+    id: 6,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/f8848f7cc3014e34b1afa09b5c111f98.mp4",
   },
   {
-    id: "r7",
-    imageUrl:
-      "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600&auto=format&fit=crop&q=70",
-    href: "#",
-    caption: "The City Sling",
+    id: 7,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/2e485134761e443588d248101885f141.mp4",
   },
   {
-    id: "r8",
-    imageUrl:
-      "https://images.unsplash.com/photo-1559563458-527698bf5295?w=700&auto=format&fit=crop&q=75",
-    href: "#",
-    caption: "Saddle-stitch close-up",
+    id: 8,
+    videoUrl:
+      "https://cdn.shopify.com/videos/c/o/v/34854670c5094add92c262e6fb1b97e8.mp4",
   },
 ];
 
@@ -92,14 +74,52 @@ export default function ReelsShowcase() {
     [ClassNames({ snapped: "is-snapped" })],
   );
 
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+
+  // Track which slide is centered.
+  useEffect(() => {
+    if (!emblaApi) return;
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    onSelect();
+    emblaApi.on("select", onSelect).on("reInit", onSelect);
+    return () => {
+      emblaApi.off("select", onSelect).off("reInit", onSelect);
+    };
+  }, [emblaApi]);
+
+  // Play only the centered video; pause + reset the others so they show their
+  // first frame as a "thumbnail".
+  useEffect(() => {
+    videoRefs.current.forEach((v, i) => {
+      if (!v) return;
+      if (i === selectedIndex) {
+        v.muted = true;
+        const p = v.play();
+        if (p && typeof p.catch === "function") p.catch(() => {});
+      } else {
+        v.pause();
+        try {
+          v.currentTime = 0;
+        } catch {
+          /* some browsers throw before metadata loads */
+        }
+      }
+    });
+  }, [selectedIndex]);
+
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
+  const scrollTo = useCallback(
+    (i: number) => emblaApi?.scrollTo(i),
+    [emblaApi],
+  );
 
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
             From the Workshop
           </p>
@@ -111,9 +131,8 @@ export default function ReelsShowcase() {
           </p>
         </div>
 
-        {/* Center-scale styling. The outer slide stays at its layout size so
-            Embla's measurements stay accurate; only the INNER element scales,
-            which keeps `getBoundingClientRect()` reporting the full slide width. */}
+        {/* Center-scale styling. Outer slide stays at full layout size so
+            Embla's measurements stay accurate; only the INNER element scales. */}
         <style>{`
           .perry-reel-slide { flex: 0 0 auto; }
           .perry-reel-inner {
@@ -129,9 +148,17 @@ export default function ReelsShowcase() {
             transform: scale(1);
             opacity: 1;
           }
+          /* Hide the play affordance on the active reel — it's playing. */
+          .perry-reel-slide.is-snapped .perry-reel-play { opacity: 0; }
+          /* Dim overlay only on non-active reels so the snapped one reads clean. */
+          .perry-reel-slide.is-snapped .perry-reel-veil { opacity: 0; }
         `}</style>
 
-        <div className="relative mt-14">
+        <div
+          className="relative mt-14"
+          data-aos="fade-up"
+          data-aos-delay="120"
+        >
           {/* Embla viewport */}
           <div ref={emblaRef} className="overflow-hidden">
             <div className="flex items-center gap-4 lg:gap-6">
@@ -139,7 +166,12 @@ export default function ReelsShowcase() {
                 <ReelCard
                   key={`${reel.id}-${i}`}
                   reel={reel}
-                  priority={i === 0}
+                  index={i}
+                  isActive={i === selectedIndex}
+                  onSelect={scrollTo}
+                  registerRef={(el) => {
+                    videoRefs.current[i] = el;
+                  }}
                 />
               ))}
             </div>
@@ -160,45 +192,54 @@ export default function ReelsShowcase() {
   );
 }
 
-function ReelCard({ reel, priority }: { reel: Reel; priority?: boolean }) {
+function ReelCard({
+  reel,
+  index,
+  isActive,
+  onSelect,
+  registerRef,
+}: {
+  reel: Reel;
+  index: number;
+  isActive: boolean;
+  onSelect: (i: number) => void;
+  registerRef: (el: HTMLVideoElement | null) => void;
+}) {
   return (
-    <a
-      href={reel.href}
+    <button
+      type="button"
+      onClick={() => onSelect(index)}
+      aria-label={isActive ? "Active reel" : "Play this reel"}
       className={cn(
-        "perry-reel-slide group/reel relative block",
+        "perry-reel-slide group/reel relative block cursor-pointer",
         "w-56 sm:w-60 md:w-64 lg:w-72",
       )}
     >
-      {/* Inner element receives the scale transform so the slide's
-          layout box stays at its full size for Embla's measurements. */}
-      <div className="perry-reel-inner relative aspect-[9/16] overflow-hidden bg-zinc-900">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={reel.imageUrl}
-          alt={reel.caption ?? "Reel"}
-          loading={priority ? "eager" : "lazy"}
-          decoding="async"
-          fetchPriority={priority ? "high" : "auto"}
-          className="absolute inset-0 size-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/reel:scale-[1.06]"
+      <div className="perry-reel-inner relative rounded-lg aspect-[9/16] overflow-hidden bg-zinc-900">
+        <video
+          ref={registerRef}
+          // #t=0.1 forces browsers to paint the first frame as a poster even
+          // before play() — without it, Firefox shows a black box.
+          src={`${reel.videoUrl}#t=0.1`}
+          muted
+          playsInline
+          loop
+          preload="metadata"
+          disablePictureInPicture
+          className="absolute inset-0 size-full object-cover"
         />
 
-        {/* Subtle gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+        {/* Dim veil — fades out on the centered reel */}
+        <div className="perry-reel-veil pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent transition-opacity duration-500" />
 
-        {/* Play affordance */}
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="grid size-12 place-items-center rounded-full border border-white/70 bg-white/10 text-white backdrop-blur-sm transition-all duration-300 group-hover/reel:scale-110 group-hover/reel:bg-white group-hover/reel:text-zinc-950">
+        {/* Play affordance — hidden on the centered reel via .is-snapped */}
+        <div className="perry-reel-play pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300">
+          <div className="grid size-12 place-items-center rounded-full border border-white/70 bg-white/10 text-white backdrop-blur-sm">
             <PlayIcon className="ml-0.5 size-5" />
           </div>
         </div>
-
-        {reel.caption && (
-          <p className="absolute inset-x-3 bottom-3 text-xs font-medium tracking-tight text-white/90">
-            {reel.caption}
-          </p>
-        )}
       </div>
-    </a>
+    </button>
   );
 }
 
