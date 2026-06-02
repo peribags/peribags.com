@@ -1,7 +1,10 @@
 import {
   Cable,
+  Clapperboard,
   FolderTree,
+  GalleryHorizontalEnd,
   LayoutDashboard,
+  LayoutTemplate,
   MessageSquare,
   Package,
   Settings,
@@ -53,6 +56,27 @@ export const adminNav: NavGroup[] = [
         label: "Settings",
         icon: Settings,
         shortcut: "S",
+      },
+    ],
+  },
+  {
+    label: "Storefront",
+    items: [
+      {
+        href: "/admin/storefront/home-banner",
+        label: "Home Banner",
+        icon: GalleryHorizontalEnd,
+        shortcut: "B",
+      },
+      {
+        href: "/admin/storefront/home-sections",
+        label: "Home Sections",
+        icon: LayoutTemplate,
+      },
+      {
+        href: "/admin/storefront/reels",
+        label: "Reels",
+        icon: Clapperboard,
       },
     ],
   },

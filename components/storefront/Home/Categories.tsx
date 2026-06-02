@@ -1,13 +1,35 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { categoryTiles, type CategoryTile } from "@/lib/category-tiles";
+import { type CategoryTile } from "@/lib/category-tiles";
 import { cn } from "@/lib/utils";
 
-export default function Categories() {
+export type CategoriesProps = {
+  /** Small uppercase label above the heading. */
+  kicker?: string;
+  /** Section heading. */
+  heading?: string;
+  /** Optional paragraph under the heading. */
+  description?: string;
+  /** Category tiles to render. */
+  tiles: CategoryTile[];
+  /** Optional "view all" CTA. Hidden when not provided. */
+  viewAllHref?: Route | null;
+  viewAllLabel?: string;
+};
+
+export default function Categories({
+  kicker,
+  heading,
+  description,
+  tiles,
+  viewAllHref,
+  viewAllLabel = "View all categories",
+}: CategoriesProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: "start",
     containScroll: "trimSnaps",
@@ -37,22 +59,40 @@ export default function Categories() {
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
+  if (tiles.length === 0) return null;
+
+  const hasHeader = Boolean(kicker || heading || description);
+
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="text-center" data-aos="fade-up">
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-            Shop by Category
-          </p>
-          <h2
-            className="mt-3 text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl"
-            data-aos="fade-up"
-            data-aos-delay="80"
-          >
-            Find your everyday companion.
-          </h2>
-        </div>
+        {hasHeader && (
+          <div className="text-center" data-aos="fade-up">
+            {kicker && (
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                {kicker}
+              </p>
+            )}
+            {heading && (
+              <h2
+                className={cn(
+                  "text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl",
+                  kicker && "mt-3",
+                )}
+                data-aos="fade-up"
+                data-aos-delay="80"
+              >
+                {heading}
+              </h2>
+            )}
+            {description && (
+              <p className="mx-auto mt-4 max-w-2xl text-sm text-zinc-600 sm:text-base">
+                {description}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Tile widths defined in plain CSS for Embla slides. */}
         <style>{`
@@ -62,7 +102,11 @@ export default function Categories() {
           }
         `}</style>
 
-        <div className="relative mt-12 lg:mt-16" data-aos="fade-up" data-aos-delay="160">
+        <div
+          className={cn("relative lg:mt-16", hasHeader ? "mt-12" : "mt-0")}
+          data-aos="fade-up"
+          data-aos-delay="160"
+        >
           {/* Embla viewport */}
           <div ref={emblaRef} className="overflow-hidden">
             <div
@@ -73,7 +117,7 @@ export default function Categories() {
                 "md:has-[a:hover]:[&_a:not(:hover)]:opacity-40",
               )}
             >
-              {categoryTiles.map((tile) => (
+              {tiles.map((tile) => (
                 <TileCard key={tile.id} tile={tile} />
               ))}
             </div>
@@ -91,15 +135,17 @@ export default function Categories() {
         </div>
 
         {/* View all */}
-        <div className="mt-10 flex justify-center lg:mt-12" data-aos="fade-up">
-          <Link
-            href="/category"
-            className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
-          >
-            View all categories
-            <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-          </Link>
-        </div>
+        {viewAllHref && (
+          <div className="mt-10 flex justify-center lg:mt-12" data-aos="fade-up">
+            <Link
+              href={viewAllHref}
+              className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
+            >
+              {viewAllLabel}
+              <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );

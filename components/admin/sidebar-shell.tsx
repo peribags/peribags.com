@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { SidebarNav } from "./sidebar-nav";
-import { ThemeToggle } from "./theme-toggle";
+import { ThemeRadio } from "./theme-toggle";
 
 const STORAGE_KEY = "admin-sidebar-collapsed";
 const W_EXPANDED = "16rem";
@@ -87,6 +87,12 @@ function SidebarFooter({
           )}
         </div>
       )}
+
+      {/* Theme selector — sits above Sign out */}
+      <ThemeRadio collapsed={collapsed} />
+
+      <div className="border-sidebar-border/60 border-t" />
+
       <form action={logoutAction}>
         <button
           type="submit"
@@ -211,8 +217,6 @@ export function SidebarShell({
 
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
       </div>
-
-      <ThemeToggle />
     </div>
   );
 }

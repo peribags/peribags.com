@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import type { HeroBannerSlide } from "@/components/storefront/Home/Hero";
 
 export type HeroSlide = {
   id: string;
@@ -41,3 +42,22 @@ export const heroSlides: HeroSlide[] = [
     gradient: "bg-gradient-to-br from-amber-900 to-zinc-950",
   },
 ];
+
+/**
+ * Static fallback for the storefront Hero, used when no banner slides have
+ * been configured in the admin panel (or the banner can't be loaded).
+ */
+export const fallbackHeroBannerSlides: HeroBannerSlide[] = heroSlides.map(
+  (s) => ({
+    id: s.id,
+    desktopMedia: s.imageUrl
+      ? { type: "image", url: s.imageUrl }
+      : undefined,
+    alt: s.alt,
+    kicker: s.kicker,
+    heading: s.heading,
+    description: s.description,
+    cta: s.cta ? { label: s.cta.label, href: s.cta.href } : undefined,
+    gradient: s.gradient,
+  }),
+);

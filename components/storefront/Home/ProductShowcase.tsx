@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 export type ProductShowcaseProps = {
   /** Small uppercase text above the heading. */
   kicker?: string;
-  /** Section heading. */
-  heading: string;
+  /** Section heading. Optional — the header block is hidden when empty. */
+  heading?: string;
   /** Optional paragraph below the heading. */
   description?: string;
   /** CSS background color (e.g. "#FAF7F1", "white"). Defaults to white. */
@@ -35,31 +35,44 @@ export default function ProductShowcase({
   const items = limit != null ? products.slice(0, limit) : products;
   if (items.length === 0) return null;
 
+  const hasHeader = Boolean(kicker || heading || description);
+
   return (
     <section style={background ? { backgroundColor: background } : undefined}>
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
-          {kicker && (
-            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-              {kicker}
-            </p>
-          )}
-          <h2
-            className={cn(
-              "text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl",
-              kicker && "mt-2",
+        {hasHeader && (
+          <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
+            {kicker && (
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                {kicker}
+              </p>
             )}
-          >
-            {heading}
-          </h2>
-          {description && (
-            <p className="mt-4 text-sm text-zinc-600 sm:text-base">{description}</p>
-          )}
-        </div>
+            {heading && (
+              <h2
+                className={cn(
+                  "text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl",
+                  kicker && "mt-2",
+                )}
+              >
+                {heading}
+              </h2>
+            )}
+            {description && (
+              <p className="mt-4 text-sm text-zinc-600 sm:text-base">
+                {description}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Grid — 2 col mobile, 4 col desktop */}
-        <div className="mt-12 grid grid-cols-2 gap-x-4 gap-y-12 lg:mt-16 lg:grid-cols-5 lg:gap-x-6 lg:gap-y-16">
+        <div
+          className={cn(
+            "grid grid-cols-2 gap-x-4 gap-y-12 lg:grid-cols-5 lg:gap-x-6 lg:gap-y-16",
+            hasHeader ? "mt-12 lg:mt-16" : "mt-0",
+          )}
+        >
           {items.map((p, i) => (
             <div
               key={p.id}

@@ -4,6 +4,7 @@ import "../globals.css";
 import { StorefrontHeader } from "@/components/storefront/header";
 import { StorefrontFooter } from "@/components/storefront/footer";
 import { AOSProvider } from "@/components/storefront/aos-provider";
+import { WhatsAppButton } from "@/components/storefront/whatsapp-button";
 import { siteConfig } from "@/lib/site";
 
 const inter = Inter({
@@ -13,11 +14,19 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: siteConfig.name,
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.name,
+    title: siteConfig.name,
+    description: siteConfig.description,
+    url: siteConfig.url,
+  },
 };
 
 export default function StorefrontRootLayout({
@@ -30,6 +39,7 @@ export default function StorefrontRootLayout({
         <StorefrontHeader />
         <main className="flex-1">{children}</main>
         <StorefrontFooter />
+        <WhatsAppButton />
       </body>
     </html>
   );

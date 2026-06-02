@@ -1,33 +1,74 @@
-import Categories from "@/components/storefront/Home/Categories";
 import CatalogueCTA from "@/components/storefront/Home/CatalogueCTA";
 import EditorialStory from "@/components/storefront/Home/EditorialStory";
-import Hero from "@/components/storefront/Home/Hero";
+import GoogleReviews from "@/components/storefront/Home/GoogleReviews";
+import Hero, { type HeroBannerSlide } from "@/components/storefront/Home/Hero";
+import HomeSections from "@/components/storefront/Home/HomeSections";
 import InstagramFeed from "@/components/storefront/Home/InstagramFeed";
-import ProductShowcase from "@/components/storefront/Home/ProductShowcase";
-import ReelsShowcase from "@/components/storefront/Home/ReelsShowcase";
+import ReelsSection from "@/components/storefront/Home/ReelsSection";
 import Trustmarks from "@/components/storefront/Home/Trustmarks";
-import { newArrivals } from "@/lib/new-arrivals";
+import { fallbackHeroBannerSlides } from "@/lib/hero-slides";
+import { r2PublicUrl } from "@/lib/r2";
+import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
+import type { HomeBannerSlide } from "@/types";
 
-export default function HomePage() {
+function toHeroSlide(s: HomeBannerSlide): HeroBannerSlide {
+  const cta =
+    s.ctaLabel && s.ctaHref
+      ? { label: s.ctaLabel, href: s.ctaHref }
+      : undefined;
+  return {
+    id: s.id,
+    desktopMedia: s.mediaUrl
+      ? { type: s.mediaType, url: r2PublicUrl(s.mediaUrl) }
+      : undefined,
+    mobileMedia: s.mobileMediaUrl
+      ? {
+          type: s.mobileMediaType ?? "image",
+          url: r2PublicUrl(s.mobileMediaUrl),
+        }
+      : undefined,
+    alt: s.alt ?? "",
+    kicker: s.kicker ?? undefined,
+    heading: s.heading ?? undefined,
+    description: s.description ?? undefined,
+    cta,
+  };
+}
+
+async function loadHeroBanner(): Promise<{
+  slides: HeroBannerSlide[];
+  heightDesktop: string | null;
+  heightMobile: string | null;
+}> {
+  try {
+    const { slides, heightDesktop, heightMobile } =
+      await getPublishedHomeBanner();
+    if (slides.length === 0) {
+      return { slides: fallbackHeroBannerSlides, heightDesktop, heightMobile };
+    }
+    return { slides: slides.map(toHeroSlide), heightDesktop, heightMobile };
+  } catch {
+    // If the banner can't be loaded (e.g. DB not configured), fall back so the
+    // homepage still renders.
+    return {
+      slides: fallbackHeroBannerSlides,
+      heightDesktop: null,
+      heightMobile: null,
+    };
+  }
+}
+
+export default async function HomePage() {
+  const banner = await loadHeroBanner();
+
   return (
     <>
-      <Hero />
-      <Categories />
-      <ProductShowcase
-        kicker="Just In"
-        heading="New Arrivals"
-        background="#ffffff"
-        products={newArrivals}
-        limit={5}
+      <Hero
+        slides={banner.slides}
+        heightDesktop={banner.heightDesktop}
+        heightMobile={banner.heightMobile}
       />
-
-      <ProductShowcase
-        kicker="Most Loved"
-        heading="Best Sellers"
-        background="#ffffff"
-        products={newArrivals}
-        limit={10}
-      />
+      <HomeSections />
 
       <EditorialStory
         kicker="Our Craft"
@@ -63,9 +104,11 @@ export default function HomePage() {
         background="#ffffff"
       />
 
-      <Trustmarks />
+      <ReelsSection />
 
-      <ReelsShowcase />
+      {/* <Trustmarks /> */}
+
+      <GoogleReviews />
 
       <InstagramFeed />
 

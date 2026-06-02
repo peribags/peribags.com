@@ -33,7 +33,7 @@ export default function AdminRootLayout({
           disableTransitionOnChange
         >
           {children}
-          <Toaster />
+          <Toaster position="top-right" />
         </ThemeProvider>
       </body>
     </html>

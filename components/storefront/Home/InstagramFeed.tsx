@@ -1,4 +1,8 @@
 import { cn } from "@/lib/utils";
+import { siteConfig } from "@/lib/site";
+
+const IG_URL = siteConfig.links.instagram;
+const IG_HANDLE = "@peribags08";
 
 type Post = {
   id: string;
@@ -11,37 +15,37 @@ const posts: Post[] = [
     id: "ig1",
     imageUrl:
       "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=600&auto=format&fit=crop&q=70",
-    href: "https://instagram.com",
+    href: IG_URL,
   },
   {
     id: "ig2",
     imageUrl:
       "https://images.unsplash.com/photo-1601924994987-69e26d50dc26?w=600&auto=format&fit=crop&q=70",
-    href: "https://instagram.com",
+    href: IG_URL,
   },
   {
     id: "ig3",
     imageUrl:
       "https://images.unsplash.com/photo-1591561954557-26941169b49e?w=600&auto=format&fit=crop&q=70",
-    href: "https://instagram.com",
+    href: IG_URL,
   },
   {
     id: "ig4",
     imageUrl:
       "https://images.unsplash.com/photo-1564485377539-4af72d1f6a2f?w=600&auto=format&fit=crop&q=70",
-    href: "https://instagram.com",
+    href: IG_URL,
   },
   {
     id: "ig5",
     imageUrl:
       "https://images.unsplash.com/photo-1559563458-527698bf5295?w=600&auto=format&fit=crop&q=70",
-    href: "https://instagram.com",
+    href: IG_URL,
   },
   {
     id: "ig6",
     imageUrl:
       "https://images.unsplash.com/photo-1606522754091-a3bbf9ad4cb3?w=600&auto=format&fit=crop&q=70",
-    href: "https://instagram.com",
+    href: IG_URL,
   },
 ];
 
@@ -71,7 +75,7 @@ export default function InstagramFeed() {
         {/* Centered heading */}
         <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-            @perrybags
+            {IG_HANDLE}
           </p>
           <h2 className="mt-3 text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl">
             Follow along.
@@ -122,7 +126,7 @@ export default function InstagramFeed() {
         {/* Follow CTA */}
         <div className="mt-10 flex justify-center lg:mt-12" data-aos="fade-up">
           <a
-            href="https://instagram.com"
+            href={IG_URL}
             target="_blank"
             rel="noreferrer"
             className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"

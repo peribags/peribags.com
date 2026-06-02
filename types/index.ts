@@ -103,3 +103,138 @@ export type EnquiryCreateInput = {
   message: string;
   sourceUrl?: string | null;
 };
+
+// ────────────────────────────────────────────────────────────────────────────
+
+export type BannerMediaType = "image" | "video";
+
+export type HomeBannerSlide = {
+  id: string;
+  /** Desktop / default media. */
+  mediaType: BannerMediaType;
+  /** R2 key for the slide image or video. Null renders a plain backdrop. */
+  mediaUrl: string | null;
+  /** Optional mobile override — replaces the desktop media on small screens. */
+  mobileMediaType: BannerMediaType | null;
+  mobileMediaUrl: string | null;
+  alt: string | null;
+  kicker: string | null;
+  heading: string | null;
+  description: string | null;
+  ctaLabel: string | null;
+  ctaHref: string | null;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HomeBannerSlideCreateInput = {
+  mediaType?: BannerMediaType;
+  mediaUrl?: string | null;
+  mobileMediaType?: BannerMediaType | null;
+  mobileMediaUrl?: string | null;
+  alt?: string | null;
+  kicker?: string | null;
+  heading?: string | null;
+  description?: string | null;
+  ctaLabel?: string | null;
+  ctaHref?: string | null;
+  sortOrder?: number;
+  published?: boolean;
+};
+
+export type HomeBannerSlideUpdateInput = Partial<HomeBannerSlideCreateInput>;
+
+export type HomeBannerConfig = {
+  /** CSS height for desktop, e.g. "640px" or "80vh". Null = default. */
+  heightDesktop: string | null;
+  /** CSS height for mobile. Null falls back to desktop, then the default. */
+  heightMobile: string | null;
+  updatedAt: string | null;
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+
+export type HomeSectionType = "category" | "product";
+export type HomeSectionProductSource = "categories" | "manual";
+
+export type HomeSection = {
+  id: string;
+  type: HomeSectionType;
+  kicker: string | null;
+  heading: string | null;
+  description: string | null;
+  /** Product sections only: CSS background colour for the band. */
+  background: string | null;
+  /** Product sections only: where the products come from. */
+  productSource: HomeSectionProductSource;
+  /** Optional cap on items rendered. */
+  itemLimit: number | null;
+  viewAllHref: string | null;
+  viewAllLabel: string | null;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+  /** Selected category ids, in display order. */
+  categoryIds: string[];
+  /** Hand-picked product ids, in display order. */
+  productIds: string[];
+};
+
+export type HomeSectionCreateInput = {
+  type: HomeSectionType;
+  kicker?: string | null;
+  heading?: string | null;
+  description?: string | null;
+  background?: string | null;
+  productSource?: HomeSectionProductSource;
+  itemLimit?: number | null;
+  viewAllHref?: string | null;
+  viewAllLabel?: string | null;
+  sortOrder?: number;
+  published?: boolean;
+  categoryIds?: string[];
+  productIds?: string[];
+};
+
+export type HomeSectionUpdateInput = Partial<HomeSectionCreateInput>;
+
+// ────────────────────────────────────────────────────────────────────────────
+
+export type HomeReel = {
+  id: string;
+  /** R2 key for the reel video. */
+  videoUrl: string | null;
+  /** R2 key for an optional poster image. */
+  posterUrl: string | null;
+  title: string | null;
+  caption: string | null;
+  promoHref: string | null;
+  promoLabel: string | null;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type HomeReelCreateInput = {
+  videoUrl?: string | null;
+  posterUrl?: string | null;
+  title?: string | null;
+  caption?: string | null;
+  promoHref?: string | null;
+  promoLabel?: string | null;
+  sortOrder?: number;
+  published?: boolean;
+};
+
+export type HomeReelUpdateInput = Partial<HomeReelCreateInput>;
+
+export type HomeReelsConfig = {
+  kicker: string | null;
+  heading: string | null;
+  description: string | null;
+  updatedAt: string | null;
+};

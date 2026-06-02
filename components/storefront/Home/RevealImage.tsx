@@ -78,19 +78,17 @@ export function RevealImage({
         className="absolute inset-0 size-full object-cover will-change-transform"
         style={{
           transform: imgTransform,
-          transition:
-            "transform 1400ms cubic-bezier(0.22, 1, 0.36, 1) 100ms",
+          transition: "transform 1400ms cubic-bezier(0.22, 1, 0.36, 1) 100ms",
         }}
       />
 
       {/* Dark curtain — slides off in the direction `slideFrom` */}
       <div
         aria-hidden
-        className="absolute inset-0 bg-zinc-950 will-change-transform"
+        className="absolute inset-0 bg-gray-200 will-change-transform"
         style={{
           transform: curtainTransform,
-          transition:
-            "transform 1100ms cubic-bezier(0.77, 0, 0.18, 1)",
+          transition: "transform 1100ms cubic-bezier(0.77, 0, 0.18, 1)",
         }}
       />
 
@@ -100,8 +98,7 @@ export function RevealImage({
         className="pointer-events-none absolute inset-0 will-change-transform"
         style={{
           transform: curtainTransform,
-          transition:
-            "transform 1100ms cubic-bezier(0.77, 0, 0.18, 1)",
+          transition: "transform 1100ms cubic-bezier(0.77, 0, 0.18, 1)",
           background:
             "radial-gradient(60% 50% at 50% 50%, rgba(255,255,255,0.06), rgba(255,255,255,0) 60%)",
         }}

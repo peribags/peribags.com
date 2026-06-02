@@ -1,30 +1,12 @@
 import Link from "next/link";
-import { Download } from "lucide-react";
-import { siteConfig } from "@/lib/site";
-
-// Inline Instagram glyph (matches Lucide stroke style).
-// The installed lucide-react version doesn't export it, so we hand-roll one.
-function InstagramIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden
-    >
-      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
-      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
-    </svg>
-  );
-}
+import { Download, MapPin } from "lucide-react";
+import {
+  siteConfig,
+  telHref,
+  formatPhone,
+  mailHref,
+} from "@/lib/site";
+import { SOCIAL_LINKS } from "@/components/storefront/social-links";
 
 const SHOP_LINKS = [
   { href: "/category/totes", label: "Totes" },
@@ -37,7 +19,7 @@ const SHOP_LINKS = [
 const COMPANY_LINKS = [
   { href: "/about", label: "Our story" },
   { href: "/contact", label: "Contact" },
-  { href: "/contact", label: "Enquiries" },
+  { href: "/sitemap.xml", label: "Sitemap" },
 ];
 
 export function StorefrontFooter() {
@@ -108,31 +90,62 @@ export function StorefrontFooter() {
           </div>
 
           {/* Connect */}
-          <div className="md:col-span-2 lg:col-span-3">
+          <div className="col-span-2 md:col-span-2 lg:col-span-3">
             <h4 className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/40">
               Connect
             </h4>
             <ul className="mt-5 space-y-3 text-sm">
+              {siteConfig.emails.map((email) => (
+                <li key={email}>
+                  <a
+                    href={mailHref(email)}
+                    className="text-white/70 transition-colors hover:text-white"
+                  >
+                    {email}
+                  </a>
+                </li>
+              ))}
+              {siteConfig.phones.map((phone) => (
+                <li key={phone}>
+                  <a
+                    href={telHref(phone)}
+                    className="text-white/70 tabular-nums transition-colors hover:text-white"
+                  >
+                    {formatPhone(phone)}
+                  </a>
+                </li>
+              ))}
               <li>
                 <a
-                  href="mailto:hello@perrybags.in"
-                  className="text-white/70 transition-colors hover:text-white"
-                >
-                  hello@perrybags.in
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://instagram.com"
+                  href={siteConfig.address.mapUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-white/70 transition-colors hover:text-white"
+                  className="group inline-flex items-start gap-2 text-white/70 transition-colors hover:text-white"
                 >
-                  <InstagramIcon className="size-3.5" />
-                  Instagram
+                  <MapPin className="mt-0.5 size-3.5 shrink-0" />
+                  <span className="max-w-[16rem] leading-relaxed">
+                    {siteConfig.address.full}
+                  </span>
                 </a>
               </li>
             </ul>
+
+            {/* Social row */}
+            <div className="mt-5 flex items-center gap-2.5">
+              {SOCIAL_LINKS.map(({ label, href, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  title={label}
+                  className="grid size-9 place-items-center rounded-full border border-white/15 text-white/70 transition-colors hover:border-white hover:bg-white hover:text-zinc-950"
+                >
+                  <Icon className="size-4" />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 

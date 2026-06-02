@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { ProductDetail } from "@/lib/product-detail";
 import { cn } from "@/lib/utils";
+import { siteConfig, mailHref } from "@/lib/site";
 
 type DetailId = "description" | "specifications" | "care" | "shipping";
 
@@ -69,10 +70,10 @@ export default function ProductDetails({ product }: Props) {
           Every Perry Bag comes with lifetime repairs. If something needs
           attention, write to us at{" "}
           <a
-            href="mailto:care@perrybags.in"
+            href={mailHref(siteConfig.email)}
             className="underline underline-offset-4 hover:text-zinc-950"
           >
-            care@perrybags.in
+            {siteConfig.email}
           </a>
           .
         </p>
@@ -86,7 +87,7 @@ export default function ProductDetails({ product }: Props) {
         <ul className="space-y-3 text-sm leading-relaxed text-zinc-700">
           <li className="flex gap-3">
             <span className="mt-2 block size-1 shrink-0 rounded-full bg-zinc-400" />
-            We're a catalogue brand — every order begins with an enquiry. Use
+            We&apos;re a catalogue brand — every order begins with an enquiry. Use
             the button on the right to send us your details.
           </li>
           <li className="flex gap-3">

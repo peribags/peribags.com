@@ -3,14 +3,27 @@ import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { requireAdmin } from "@/lib/auth";
 import { getR2Client, r2Bucket, r2PublicUrl } from "@/lib/r2";
 
-const MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
+const MAX_VIDEO_BYTES = 64 * 1024 * 1024; // 64 MB
 
-const EXT_BY_MIME: Record<string, string> = {
+const IMAGE_EXT_BY_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",
   "image/avif": "avif",
   "image/gif": "gif",
+};
+
+const VIDEO_EXT_BY_MIME: Record<string, string> = {
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/ogg": "ogv",
+  "video/quicktime": "mov",
+};
+
+const EXT_BY_MIME: Record<string, string> = {
+  ...IMAGE_EXT_BY_MIME,
+  ...VIDEO_EXT_BY_MIME,
 };
 
 export async function POST(req: Request) {
@@ -37,14 +50,20 @@ export async function POST(req: Request) {
   if (file.size === 0) {
     return Response.json({ error: "Empty file" }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
-    return Response.json({ error: "File too large (max 8 MB)" }, { status: 413 });
-  }
   const ext = EXT_BY_MIME[file.type];
   if (!ext) {
     return Response.json(
       { error: `Unsupported file type: ${file.type}` },
       { status: 415 },
+    );
+  }
+  const isVideo = file.type.startsWith("video/");
+  const maxBytes = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (file.size > maxBytes) {
+    const limitMb = Math.round(maxBytes / (1024 * 1024));
+    return Response.json(
+      { error: `File too large (max ${limitMb} MB)` },
+      { status: 413 },
     );
   }
 
@@ -66,5 +85,8 @@ export async function POST(req: Request) {
     return Response.json({ error: message }, { status: 500 });
   }
 
-  return Response.json({ key, url: r2PublicUrl(key) }, { status: 201 });
+  return Response.json(
+    { key, url: r2PublicUrl(key), mediaType: isVideo ? "video" : "image" },
+    { status: 201 },
+  );
 }

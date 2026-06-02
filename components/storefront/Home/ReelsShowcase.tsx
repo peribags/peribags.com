@@ -3,66 +3,48 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
 import ClassNames from "embla-carousel-class-names";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Reel = {
-  id: number;
+export type ReelItem = {
+  id: string;
+  /** Resolved public video URL. */
   videoUrl: string;
+  /** Resolved poster image URL. */
+  posterUrl?: string;
+  title?: string;
+  caption?: string;
+  /** Promotion link (internal path or full URL). */
+  promoHref?: string;
+  promoLabel?: string;
 };
 
-const reels: Reel[] = [
-  {
-    id: 1,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/f8848f7cc3014e34b1afa09b5c111f98.mp4",
-  },
-  {
-    id: 2,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/34854670c5094add92c262e6fb1b97e8.mp4",
-  },
-  {
-    id: 3,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/34df93aa735249bd8618679422eae3b9.mp4",
-  },
-  {
-    id: 4,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/1786b9cbfda04aa6b42192523971e6fb.mp4",
-  },
-  {
-    id: 5,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/dab6cababdf8467897f12f0d9c3ae496.mp4",
-  },
-  {
-    id: 6,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/f8848f7cc3014e34b1afa09b5c111f98.mp4",
-  },
-  {
-    id: 7,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/2e485134761e443588d248101885f141.mp4",
-  },
-  {
-    id: 8,
-    videoUrl:
-      "https://cdn.shopify.com/videos/c/o/v/34854670c5094add92c262e6fb1b97e8.mp4",
-  },
-];
+export type ReelsShowcaseProps = {
+  reels: ReelItem[];
+  kicker?: string;
+  heading?: string;
+  description?: string;
+};
 
 function PlayIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
       <path d="M8 5v14l11-7z" />
     </svg>
   );
 }
 
-export default function ReelsShowcase() {
+export default function ReelsShowcase({
+  reels,
+  kicker,
+  heading,
+  description,
+}: ReelsShowcaseProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     {
       align: "center",
@@ -89,7 +71,7 @@ export default function ReelsShowcase() {
   }, [emblaApi]);
 
   // Play only the centered video; pause + reset the others so they show their
-  // first frame as a "thumbnail".
+  // first frame / poster as a "thumbnail".
   useEffect(() => {
     videoRefs.current.forEach((v, i) => {
       if (!v) return;
@@ -115,21 +97,38 @@ export default function ReelsShowcase() {
     [emblaApi],
   );
 
+  if (reels.length === 0) return null;
+
+  const hasHeader = Boolean(kicker || heading || description);
+
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
         {/* Centered heading */}
-        <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
-          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-            From the Workshop
-          </p>
-          <h2 className="mt-3 text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl">
-            In motion.
-          </h2>
-          <p className="mt-4 text-sm text-zinc-600 sm:text-base">
-            Short films and behind-the-scenes glimpses from our workshop.
-          </p>
-        </div>
+        {hasHeader && (
+          <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
+            {kicker && (
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                {kicker}
+              </p>
+            )}
+            {heading && (
+              <h2
+                className={cn(
+                  "text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl",
+                  kicker && "mt-3",
+                )}
+              >
+                {heading}
+              </h2>
+            )}
+            {description && (
+              <p className="mt-4 text-sm text-zinc-600 sm:text-base">
+                {description}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Center-scale styling. Outer slide stays at full layout size so
             Embla's measurements stay accurate; only the INNER element scales. */}
@@ -155,7 +154,7 @@ export default function ReelsShowcase() {
         `}</style>
 
         <div
-          className="relative mt-14"
+          className={cn("relative", hasHeader ? "mt-14" : "mt-0")}
           data-aos="fade-up"
           data-aos-delay="120"
         >
@@ -199,47 +198,86 @@ function ReelCard({
   onSelect,
   registerRef,
 }: {
-  reel: Reel;
+  reel: ReelItem;
   index: number;
   isActive: boolean;
   onSelect: (i: number) => void;
   registerRef: (el: HTMLVideoElement | null) => void;
 }) {
+  const hasMeta = Boolean(reel.title || reel.caption || reel.promoHref);
+  // Without a poster, force the first frame to paint as a thumbnail.
+  const videoSrc = reel.posterUrl ? reel.videoUrl : `${reel.videoUrl}#t=0.1`;
+
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(index)}
-      aria-label={isActive ? "Active reel" : "Play this reel"}
+    <div
       className={cn(
-        "perry-reel-slide group/reel relative block cursor-pointer",
+        "perry-reel-slide group/reel relative block",
         "w-56 sm:w-60 md:w-64 lg:w-72",
       )}
     >
       <div className="perry-reel-inner relative rounded-lg aspect-[9/16] overflow-hidden bg-zinc-900">
         <video
           ref={registerRef}
-          // #t=0.1 forces browsers to paint the first frame as a poster even
-          // before play() — without it, Firefox shows a black box.
-          src={`${reel.videoUrl}#t=0.1`}
+          src={videoSrc}
+          poster={reel.posterUrl}
           muted
           playsInline
           loop
           preload="metadata"
           disablePictureInPicture
-          className="absolute inset-0 size-full object-cover"
+          className="absolute inset-0 z-0 size-full object-cover"
         />
 
         {/* Dim veil — fades out on the centered reel */}
-        <div className="perry-reel-veil pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent transition-opacity duration-500" />
+        <div className="perry-reel-veil pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/15 to-transparent transition-opacity duration-500" />
+
+        {/* Full-area select button — centers/replays this reel */}
+        <button
+          type="button"
+          onClick={() => onSelect(index)}
+          aria-label={isActive ? "Active reel" : "Play this reel"}
+          className="absolute inset-0 z-[2] cursor-pointer"
+        />
 
         {/* Play affordance — hidden on the centered reel via .is-snapped */}
-        <div className="perry-reel-play pointer-events-none absolute inset-0 grid place-items-center transition-opacity duration-300">
+        <div className="perry-reel-play pointer-events-none absolute inset-0 z-[3] grid place-items-center transition-opacity duration-300">
           <div className="grid size-12 place-items-center rounded-full border border-white/70 bg-white/10 text-white backdrop-blur-sm">
             <PlayIcon className="ml-0.5 size-5" />
           </div>
         </div>
+
+        {/* Title / caption / promo — shown on the active reel */}
+        {hasMeta && (
+          <div
+            className={cn(
+              "absolute inset-x-0 bottom-0 z-[4] flex flex-col items-start gap-2 p-4 transition-opacity duration-500",
+              isActive ? "opacity-100" : "pointer-events-none opacity-0",
+            )}
+          >
+            {reel.title && (
+              <h3 className="pointer-events-none text-sm font-medium tracking-tight text-white drop-shadow sm:text-base">
+                {reel.title}
+              </h3>
+            )}
+            {reel.caption && (
+              <p className="pointer-events-none line-clamp-2 text-xs text-white/85 drop-shadow">
+                {reel.caption}
+              </p>
+            )}
+            {reel.promoHref && (
+              <a
+                href={reel.promoHref}
+                tabIndex={isActive ? 0 : -1}
+                className="pointer-events-auto mt-0.5 inline-flex rounded-full items-center gap-1.5 bg-white px-3.5 py-2 text-[11px] font-medium uppercase tracking-[0.18em] text-zinc-950 transition-colors hover:bg-zinc-100"
+              >
+                {reel.promoLabel || "Shop now"}
+                <ArrowUpRight className="size-3.5" />
+              </a>
+            )}
+          </div>
+        )}
       </div>
-    </button>
+    </div>
   );
 }
 
