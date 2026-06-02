@@ -5,10 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, ChevronDown, Menu, Search, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { categoryTiles } from "@/lib/category-tiles";
+import type { CategoryTile } from "@/lib/category-tiles";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
-import type { CategoryNode } from "@/types";
 import { HeaderSearchModal } from "./header-search";
 
 const STATIC_LINKS: { href: string; label: string }[] = [
@@ -20,7 +19,7 @@ const STATIC_LINKS: { href: string; label: string }[] = [
 const SCROLL_HIDE_THRESHOLD = 80; // px down before hide kicks in
 const AT_TOP_THRESHOLD = 10; // px from top to count as "at top"
 
-export function HeaderShell({ categories: _categories }: { categories: CategoryNode[] }) {
+export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [atTop, setAtTop] = useState(true);
   const [hidden, setHidden] = useState(false);
@@ -105,7 +104,7 @@ export function HeaderShell({ categories: _categories }: { categories: CategoryN
 
       <header
       style={{
-        transitionProperty: "transform, background-color, border-color, color",
+        transitionProperty: "transform, background-color, color",
         transitionDuration: "500ms, 300ms, 300ms, 300ms",
         transitionTimingFunction:
           "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out, ease-out",
@@ -115,8 +114,8 @@ export function HeaderShell({ categories: _categories }: { categories: CategoryN
       className={cn(
         "fixed inset-x-0 top-0 z-40",
         transparent
-          ? "border-b border-transparent bg-transparent text-white"
-          : "border-b border-zinc-200 bg-white text-zinc-950 backdrop-blur ",
+          ? "bg-transparent text-white"
+          : "bg-white text-zinc-950",
       )}
     >
       <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 md:px-6 lg:h-20 lg:px-[4vw]">
@@ -280,7 +279,7 @@ export function HeaderShell({ categories: _categories }: { categories: CategoryN
         }}
         className="absolute inset-x-0 top-full hidden border-t border-zinc-200 bg-white lg:block"
       >
-        <MegaPanel onItemClick={() => setMegaOpen(false)} />
+        <MegaPanel tiles={tiles} onItemClick={() => setMegaOpen(false)} />
       </div>
     </header>
 
@@ -288,6 +287,7 @@ export function HeaderShell({ categories: _categories }: { categories: CategoryN
       <HeaderSearchModal
         open={searchOpen}
         query={searchQuery}
+        tiles={tiles}
         onQueryChange={setSearchQuery}
         onClose={() => setSearchOpen(false)}
       />
@@ -299,9 +299,15 @@ export function HeaderShell({ categories: _categories }: { categories: CategoryN
 // Mega panel — full-width, editorial layout
 // ────────────────────────────────────────────────────────────────────────────
 
-function MegaPanel({ onItemClick }: { onItemClick: () => void }) {
-  const featured = categoryTiles.slice(0, 2);
-  const list = categoryTiles;
+function MegaPanel({
+  tiles,
+  onItemClick,
+}: {
+  tiles: CategoryTile[];
+  onItemClick: () => void;
+}) {
+  const featured = tiles.slice(0, 2);
+  const list = tiles;
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 py-10 md:px-6 lg:px-[4vw] lg:py-12">
@@ -353,16 +359,18 @@ function MegaPanel({ onItemClick }: { onItemClick: () => void }) {
               key={tile.id}
               href={tile.href}
               onClick={onItemClick}
-              className="group/feat relative block aspect-[4/5] overflow-hidden"
+              className="group/feat relative block aspect-[4/5] overflow-hidden bg-zinc-100"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={"/sling.jpg"}
-                alt={tile.name}
-                loading="lazy"
-                decoding="async"
-                className="absolute inset-0 size-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/feat:scale-[1.04]"
-              />
+              {tile.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={tile.imageUrl}
+                  alt={tile.name}
+                  loading="lazy"
+                  decoding="async"
+                  className="absolute inset-0 size-full object-cover transition-transform duration-[900ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/feat:scale-[1.04]"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent" />
               <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-5">
                 <div>

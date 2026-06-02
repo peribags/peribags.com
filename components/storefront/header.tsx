@@ -1,7 +1,9 @@
 import { listPublishedCategoryTree } from "@/lib/services/storefront/categories.service";
+import { rootNodesToTiles } from "@/lib/category-tiles";
 import { HeaderShell } from "./header-shell";
 
 export async function StorefrontHeader() {
-  const categories = await listPublishedCategoryTree();
-  return <HeaderShell categories={categories} />;
+  const tree = await listPublishedCategoryTree();
+  const tiles = rootNodesToTiles(tree);
+  return <HeaderShell tiles={tiles} />;
 }

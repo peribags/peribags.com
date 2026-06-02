@@ -59,7 +59,7 @@ export default function ProductShowcase({
               </h2>
             )}
             {description && (
-              <p className="mt-4 text-sm text-zinc-600 sm:text-base">
+              <p className="mt-2 text-sm text-zinc-600 sm:text-base">
                 {description}
               </p>
             )}
@@ -108,8 +108,8 @@ function ProductCard({ product }: { product: NewArrivalCard }) {
     <Link href={product.href} className="group/card block">
       {/* Image — cream tile frames the (often white-bg) product photo */}
       <div
-        className="relative aspect-[3/4.25] overflow-hidden"
-        style={{ backgroundColor: "#F5F1EA" }}
+        className="relative aspect-[4/5] overflow-hidden"
+        style={{ backgroundColor: "#DDDDDD" }}
       >
         {product.imageUrl ? (
           // Padded centered container — product floats inside the cream frame.
@@ -164,17 +164,9 @@ function ProductCard({ product }: { product: NewArrivalCard }) {
       </div>
 
       {/* Name — centered with underline-grow on hover (md+) */}
-      <div className="mt-5 text-center">
+      <div className="mt-4 text-left">
         <h3 className="text-sm font-normal tracking-tight text-zinc-950 sm:text-base">
-          <span
-            className={cn(
-              "relative inline-block",
-              "md:after:absolute md:after:inset-x-0 md:after:-bottom-0.5 md:after:h-px md:after:origin-center md:after:scale-x-0 md:after:bg-zinc-950 md:after:transition-transform md:after:duration-500 md:after:ease-out md:after:content-['']",
-              "md:group-hover/card:after:scale-x-100",
-            )}
-          >
             {product.name}
-          </span>
         </h3>
       </div>
     </Link>

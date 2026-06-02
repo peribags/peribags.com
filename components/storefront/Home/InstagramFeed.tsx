@@ -129,7 +129,7 @@ export default function InstagramFeed() {
             href={IG_URL}
             target="_blank"
             rel="noreferrer"
-            className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
+            className="group inline-flex rounded-full items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
           >
             <InstagramIcon className="size-4" />
             Follow on Instagram

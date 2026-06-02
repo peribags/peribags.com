@@ -1,26 +1,42 @@
 import Link from "next/link";
-import { ChevronRight, FolderTree, ImageIcon, Plus, Sparkles } from "lucide-react";
+import { FolderTree, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   countDescendants,
-  flattenTreeWithLines,
   listCategoryTree,
 } from "@/lib/services/admin/categories.service";
 import { r2PublicUrl } from "@/lib/r2";
-import { cn } from "@/lib/utils";
-import { DeleteCategoryButton } from "./delete-category-button";
+import type { CategoryNode } from "@/types";
+import { CategoryTree, type ClientTreeNode } from "./category-tree";
 import { FlashToast } from "./flash-toast";
+
+/** Convert a server CategoryNode to a client-safe shape with resolved image URLs. */
+function toClientNode(node: CategoryNode): ClientTreeNode {
+  return {
+    id: node.id,
+    name: node.name,
+    slug: node.slug,
+    description: node.description,
+    imageSrc: node.imageUrl ? r2PublicUrl(node.imageUrl) : null,
+    published: node.published,
+    children: node.children.map(toClientNode),
+  };
+}
 
 export const metadata = { title: "Categories" };
 
 export default async function AdminCategoryPage() {
   const tree = await listCategoryTree();
-  const rows = flattenTreeWithLines(tree);
 
-  const total = rows.length;
+  // Totals computed on the server so the page header doesn't depend on
+  // expand state in the client tree.
   const rootCount = tree.length;
-  const maxDepth = rows.reduce((m, r) => Math.max(m, r.depth + 1), 0);
-  const publishedCount = rows.filter((r) => r.node.published).length;
+  const total = tree.reduce(
+    (sum, n) => sum + 1 + countDescendants(n),
+    0,
+  );
+
+  const { maxDepth, publishedCount } = walkTotals(tree);
 
   return (
     <div className="space-y-10">
@@ -31,7 +47,7 @@ export default async function AdminCategoryPage() {
         <div className="space-y-3">
           <p className="text-muted-foreground inline-flex items-center gap-1.5 text-[11px] font-medium tracking-[0.18em] uppercase">
             <FolderTree className="size-3" />
-             Categories
+            Categories
           </p>
           <h1 className="text-foreground text-3xl font-semibold leading-[1.1] tracking-tight sm:text-4xl">
             Category tree
@@ -53,7 +69,7 @@ export default async function AdminCategoryPage() {
 
       {/* Stats strip */}
       {total > 0 && (
-        <dl className="border-border bg-card grid grid-cols-2 divide-x divide-border overflow-hidden rounded-2xl border sm:grid-cols-4">
+        <dl className="border-border bg-card divide-border grid grid-cols-2 divide-x overflow-hidden rounded-2xl border sm:grid-cols-4">
           <Stat label="Categories" value={total} />
           <Stat label="Root nodes" value={rootCount} />
           <Stat label="Max depth" value={maxDepth} />
@@ -65,28 +81,33 @@ export default async function AdminCategoryPage() {
       {total === 0 ? (
         <EmptyState />
       ) : (
-        <section className="border-border bg-card overflow-hidden rounded-2xl border">
-          <div className="border-border bg-muted/30 flex items-center justify-between border-b px-5 py-3">
-            <span className="text-muted-foreground text-[11px] font-semibold tracking-[0.14em] uppercase">
-              Hierarchy
-            </span>
-            <span className="text-muted-foreground text-xs tabular-nums">
-              {total} {total === 1 ? "node" : "nodes"}
-            </span>
-          </div>
-          <ul>
-            {rows.map((row, i) => (
-              <TreeRow
-                key={row.node.id}
-                row={row}
-                isLast={i === rows.length - 1}
-              />
-            ))}
-          </ul>
-        </section>
+        <CategoryTree tree={tree.map(toClientNode)} total={total} />
       )}
     </div>
   );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ────────────────────────────────────────────────────────────────────────────
+
+type WalkNode = {
+  published: boolean;
+  children: WalkNode[];
+};
+
+function walkTotals(tree: WalkNode[]) {
+  let maxDepth = 0;
+  let publishedCount = 0;
+  const walk = (nodes: WalkNode[], depth: number) => {
+    if (nodes.length > 0) maxDepth = Math.max(maxDepth, depth + 1);
+    for (const n of nodes) {
+      if (n.published) publishedCount += 1;
+      walk(n.children, depth + 1);
+    }
+  };
+  walk(tree, 0);
+  return { maxDepth, publishedCount };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -108,139 +129,6 @@ function Stat({
       <dd className="text-foreground text-2xl font-semibold leading-none tracking-tight tabular-nums">
         {value}
       </dd>
-    </div>
-  );
-}
-
-type Row = ReturnType<typeof flattenTreeWithLines>[number];
-
-function TreeRow({ row, isLast }: { row: Row; isLast: boolean }) {
-  const { node, depth, ancestorLines, isLastSibling } = row;
-  const descendants = node.children.length
-    ? node.children.reduce((n, c) => n + 1 + countDescendants(c), 0)
-    : 0;
-
-  return (
-    <li
-      className={cn(
-        "group/row relative transition-colors hover:bg-accent/40",
-        !isLast && "border-border border-b",
-      )}
-    >
-      <div className="flex items-stretch gap-0">
-        {/* Connector columns */}
-        {depth > 0 && (
-          <div className="flex shrink-0 self-stretch">
-            {ancestorLines.map((draw, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "relative w-6",
-                  draw && "before:bg-border before:absolute before:inset-y-0 before:left-3 before:w-px",
-                )}
-              />
-            ))}
-            {/* L-connector for this row's own column */}
-            <div className="relative w-6">
-              {/* vertical */}
-              <div
-                className={cn(
-                  "bg-border absolute left-3 top-0 w-px",
-                  isLastSibling ? "h-1/2" : "h-full",
-                )}
-              />
-              {/* horizontal arm */}
-              <div className="bg-border absolute left-3 top-1/2 h-px w-3" />
-            </div>
-          </div>
-        )}
-
-        {/* Row content */}
-        <div className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-3 pl-3">
-          <Thumb node={node} />
-
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
-              <Link
-                href={`/admin/category/${node.id}`}
-                className="text-foreground hover:text-foreground/80 truncate text-sm font-semibold leading-tight tracking-tight underline-offset-4 hover:underline"
-              >
-                {node.name}
-              </Link>
-              <code className="text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 font-mono text-[10px] leading-none">
-                {node.slug}
-              </code>
-              {!node.published && (
-                <span className="border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase">
-                  Draft
-                </span>
-              )}
-              {descendants > 0 && (
-                <span className="text-muted-foreground text-[11px]">
-                  {descendants} {descendants === 1 ? "child" : "children"}
-                </span>
-              )}
-            </div>
-            {node.description && (
-              <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
-                {node.description}
-              </p>
-            )}
-          </div>
-
-          <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-within:opacity-100">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              title="Add a sub-category"
-            >
-              <Link href={`/admin/category/new?parent=${node.id}`}>
-                <Plus className="size-3.5" />
-                <span className="hidden sm:inline">Add child</span>
-              </Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="h-8"
-              title="Edit category"
-            >
-              <Link href={`/admin/category/${node.id}`}>
-                <ChevronRight className="size-3.5" />
-                <span className="hidden sm:inline">Edit</span>
-              </Link>
-            </Button>
-            <DeleteCategoryButton
-              id={node.id}
-              name={node.name}
-              descendantCount={descendants}
-              variant="icon"
-            />
-          </div>
-        </div>
-      </div>
-    </li>
-  );
-}
-
-function Thumb({ node }: { node: { imageUrl: string | null; name: string } }) {
-  return (
-    <div className="from-muted/40 to-muted relative size-10 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br ring-1 ring-border/60">
-      {node.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={r2PublicUrl(node.imageUrl)}
-          alt=""
-          className="size-full object-cover"
-        />
-      ) : (
-        <div className="text-muted-foreground/60 grid size-full place-items-center">
-          <ImageIcon className="size-4" />
-        </div>
-      )}
     </div>
   );
 }

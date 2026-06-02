@@ -43,6 +43,18 @@ export const siteConfig = {
     linkedin: "https://www.linkedin.com/company/peri-bags/",
     whatsapp: `https://wa.me/${WHATSAPP_NUMBER}`,
   },
+
+  /**
+   * Static maintenance flag for the storefront. Flip `enabled` and redeploy
+   * to take the public site offline; the admin panel is unaffected because it
+   * lives in a separate route group with its own layout.
+   */
+  maintenance: {
+    enabled: process.env.NODE_ENV === 'production' ? true : false,
+    heading: "We're sprucing the place up.",
+    body: "Perry Bags will be back online shortly. For urgent enquiries, reach out via email, phone, or WhatsApp.",
+    eta: "Back online soon",
+  },
 } as const;
 
 export type SiteConfig = typeof siteConfig;

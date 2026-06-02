@@ -78,7 +78,7 @@ export default function Categories({
               <h2
                 className={cn(
                   "text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl",
-                  kicker && "mt-3",
+                  kicker && "mt-2",
                 )}
                 data-aos="fade-up"
                 data-aos-delay="80"
@@ -103,20 +103,13 @@ export default function Categories({
         `}</style>
 
         <div
-          className={cn("relative lg:mt-16", hasHeader ? "mt-12" : "mt-0")}
+          className={cn("relative lg:mt-12", hasHeader ? "mt-10" : "mt-0")}
           data-aos="fade-up"
           data-aos-delay="160"
         >
           {/* Embla viewport */}
           <div ref={emblaRef} className="overflow-hidden">
-            <div
-              className={cn(
-                "flex gap-3 lg:gap-4",
-                // Hover-dim siblings (md+ only) — fires when an actual <a> is hovered.
-                "md:[&_a]:transition-opacity md:[&_a]:duration-500 md:[&_a]:ease-out",
-                "md:has-[a:hover]:[&_a:not(:hover)]:opacity-40",
-              )}
-            >
+            <div className="flex gap-3 lg:gap-4">
               {tiles.map((tile) => (
                 <TileCard key={tile.id} tile={tile} />
               ))}
@@ -139,7 +132,7 @@ export default function Categories({
           <div className="mt-10 flex justify-center lg:mt-12" data-aos="fade-up">
             <Link
               href={viewAllHref}
-              className="group inline-flex items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
+              className="group inline-flex rounded-full items-center gap-2 border border-zinc-900 px-6 py-3 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white"
             >
               {viewAllLabel}
               <ArrowUpRight className="size-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -182,12 +175,7 @@ function SliderButton({
 function TileCard({ tile }: { tile: CategoryTile }) {
   return (
     <Link href={tile.href} className="perry-cat-slide group/card block">
-      <div
-        className={cn(
-          "relative aspect-[4/5.5] overflow-hidden",
-          tile.gradient ?? "bg-zinc-100",
-        )}
-      >
+      <div className="relative aspect-[4/5.5] overflow-hidden rounded-md bg-zinc-100">
         {tile.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -198,20 +186,32 @@ function TileCard({ tile }: { tile: CategoryTile }) {
             className="absolute inset-0 size-full object-cover md:transition-transform md:duration-[900ms] md:ease-[cubic-bezier(0.22,1,0.36,1)] md:group-hover/card:scale-[1.04]"
           />
         )}
-      </div>
 
-      <div className="mt-4 text-center">
-        <h3 className="text-sm font-medium tracking-tight text-zinc-950 sm:text-base">
-          <span
-            className={cn(
-              "relative inline-block",
-              "md:after:absolute md:after:inset-x-0 md:after:-bottom-0.5 md:after:h-px md:after:origin-center md:after:scale-x-0 md:after:bg-zinc-950 md:after:transition-transform md:after:duration-500 md:after:ease-out md:after:content-['']",
-              "md:group-hover/card:after:scale-x-100",
-            )}
-          >
-            {tile.name}
-          </span>
-        </h3>
+        {/* Gradient overlay for legibility */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 via-transparent to-transparent"
+        />
+
+        {/* Text inside, bottom */}
+        <div className="absolute inset-x-0 bottom-0 p-3 text-left md:p-4">
+          {tile.kicker && (
+            <p className="text-[10px] font-normal uppercase tracking-[0.22em] text-white/75">
+              {tile.kicker}
+            </p>
+          )}
+          <h3 className="mt-1 text-base font-normal text-white">
+            <span
+              className={cn(
+                "relative inline-block",
+                "md:after:absolute md:after:inset-x-0 md:after:-bottom-0.5 md:after:h-px md:after:origin-left md:after:scale-x-0 md:after:bg-white md:after:transition-transform md:after:duration-500 md:after:ease-out md:after:content-['']",
+                "md:group-hover/card:after:scale-x-100",
+              )}
+            >
+              {tile.name}
+            </span>
+          </h3>
+        </div>
       </div>
     </Link>
   );

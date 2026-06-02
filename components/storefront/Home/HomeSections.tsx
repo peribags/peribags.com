@@ -1,7 +1,5 @@
 import Categories from "./Categories";
 import ProductShowcase from "./ProductShowcase";
-import { categoryTiles } from "@/lib/category-tiles";
-import { newArrivals } from "@/lib/new-arrivals";
 import {
   getPublishedHomeSections,
   type ResolvedHomeSection,
@@ -53,31 +51,3 @@ export default async function HomeSections() {
   );
 }
 
-/** The pre-dynamic default: category tiles + New Arrivals + Best Sellers. */
-// function DefaultSections() {
-//   return (
-//     <>
-//       <Categories
-//         kicker="Shop by Category"
-//         heading="Find your everyday companion."
-//         tiles={categoryTiles}
-//         viewAllHref="/category"
-//         viewAllLabel="View all categories"
-//       />
-//       <ProductShowcase
-//         kicker="Just In"
-//         heading="New Arrivals"
-//         background="#ffffff"
-//         products={newArrivals}
-//         limit={5}
-//       />
-//       <ProductShowcase
-//         kicker="Most Loved"
-//         heading="Best Sellers"
-//         background="#ffffff"
-//         products={newArrivals}
-//         limit={10}
-//       />
-//     </>
-//   );
-// }

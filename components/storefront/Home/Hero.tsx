@@ -293,7 +293,7 @@ function SlideView({
                 <Link
                   href={slide.cta.href as Route}
                   tabIndex={active ? 0 : -1}
-                  className="group/cta inline-flex items-center gap-2.5 bg-white px-7 py-3.5 text-sm font-medium tracking-tight text-zinc-950 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-200 hover:gap-3.5 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  className="group/cta inline-flex rounded-full items-center gap-2.5 bg-white px-7 py-3.5 text-sm font-medium tracking-tight text-zinc-950 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] transition-all duration-200 hover:gap-3.5 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 >
                   {slide.cta.label}
                   <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />

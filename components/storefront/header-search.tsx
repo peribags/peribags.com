@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Search as SearchIcon, X } from "lucide-react";
-import { categoryTiles } from "@/lib/category-tiles";
+import type { CategoryTile } from "@/lib/category-tiles";
 import { newArrivals } from "@/lib/new-arrivals";
 import { cn } from "@/lib/utils";
 
 type Props = {
   open: boolean;
   query: string;
+  tiles: CategoryTile[];
   onClose: () => void;
   onQueryChange: (q: string) => void;
 };
@@ -23,7 +24,13 @@ function formatINR(paise: number | null) {
   }).format(paise / 100);
 }
 
-export function HeaderSearchModal({ open, query, onClose, onQueryChange }: Props) {
+export function HeaderSearchModal({
+  open,
+  query,
+  tiles,
+  onClose,
+  onQueryChange,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Focus the input shortly after opening (after the transition starts).
@@ -58,8 +65,8 @@ export function HeaderSearchModal({ open, query, onClose, onQueryChange }: Props
 
   const matchedCategories = useMemo(() => {
     if (!hasQuery) return [];
-    return categoryTiles.filter((c) => c.name.toLowerCase().includes(q));
-  }, [hasQuery, q]);
+    return tiles.filter((c) => c.name.toLowerCase().includes(q));
+  }, [hasQuery, q, tiles]);
 
   const matchedProducts = useMemo(() => {
     if (!hasQuery) return [];
@@ -125,7 +132,7 @@ export function HeaderSearchModal({ open, query, onClose, onQueryChange }: Props
 
           {/* Results / suggestions */}
           <div className="pb-10 pt-8">
-            {!hasQuery && <Suggestions onItemClick={onClose} />}
+            {!hasQuery && <Suggestions tiles={tiles} onItemClick={onClose} />}
 
             {hasQuery && !empty && (
               <div className="grid grid-cols-12 gap-8 lg:gap-12">
@@ -200,7 +207,7 @@ export function HeaderSearchModal({ open, query, onClose, onQueryChange }: Props
                   Try a different word, or browse popular categories below.
                 </p>
                 <div className="mt-6">
-                  <Suggestions onItemClick={onClose} />
+                  <Suggestions tiles={tiles} onItemClick={onClose} />
                 </div>
               </div>
             )}
@@ -211,14 +218,21 @@ export function HeaderSearchModal({ open, query, onClose, onQueryChange }: Props
   );
 }
 
-function Suggestions({ onItemClick }: { onItemClick: () => void }) {
+function Suggestions({
+  tiles,
+  onItemClick,
+}: {
+  tiles: CategoryTile[];
+  onItemClick: () => void;
+}) {
+  if (tiles.length === 0) return null;
   return (
     <div>
       <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
         Popular Categories
       </p>
       <div className="mt-5 flex flex-wrap gap-2">
-        {categoryTiles.map((c) => (
+        {tiles.map((c) => (
           <Link
             key={c.id}
             href={c.href}
