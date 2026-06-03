@@ -12,7 +12,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: { default: "Admin", template: "%s · Admin" },
-  description: "Perry Bags admin panel",
+  description: "peribags admin panel",
   robots: { index: false, follow: false },
 };
 

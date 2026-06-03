@@ -81,7 +81,7 @@ export default function InstagramFeed() {
             Follow along.
           </h2>
           <p className="mt-4 text-sm text-zinc-600 sm:text-base">
-            See where Perry Bags travels — from quiet workshops to city streets.
+            See where peribags travels — from quiet workshops to city streets.
           </p>
         </div>
 

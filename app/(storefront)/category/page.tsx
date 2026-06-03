@@ -5,9 +5,9 @@ import { rootNodesToTiles, type CategoryTile } from "@/lib/category-tiles";
 import { cn } from "@/lib/utils";
 
 export const metadata = {
-  title: "All Categories | Perry Bags",
+  title: "All Categories | peribags",
   description:
-    "Browse every Perry Bags category — totes, slings, backpacks, wallets, and more.",
+    "Browse every peribags category — totes, slings, backpacks, wallets, and more.",
 };
 
 export default async function CategoryIndexPage() {
@@ -42,7 +42,7 @@ export default async function CategoryIndexPage() {
               Shop by Category
             </h1>
             <p className="mt-2 max-w-md text-sm font-light text-zinc-600 sm:text-base">
-              Browse the full Perry Bags range — slings, backpacks, wallets,
+              Browse the full peribags range — slings, backpacks, wallets,
               and more.
             </p>
           </div>

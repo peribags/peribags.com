@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronRight, X } from "lucide-react";
-import type { ProductDetail } from "@/lib/product-detail";
+import type { ProductDetail } from "@/lib/services/storefront/product-detail.service";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -12,13 +12,16 @@ type Props = {
 };
 
 export default function ProductInfo({ product }: Props) {
-  const [selectedColor, setSelectedColor] = useState(product.colors[0]?.name);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
   const onShare = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
-    const data = { title: product.name, text: product.tagline, url };
+    const data = {
+      title: product.name,
+      text: product.shortDescription ?? "",
+      url,
+    };
     if (typeof navigator !== "undefined" && "share" in navigator) {
       try {
         await navigator.share(data);
@@ -40,81 +43,57 @@ export default function ProductInfo({ product }: Props) {
   return (
     <div className="flex flex-col">
       {/* Kicker — category link */}
-      <Link
-        href={`/category/${product.categorySlug}` as never}
-        className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-950"
-      >
-        {product.categoryName}
-        <ChevronRight className="size-3" />
-      </Link>
+      {/* {product.category && (
+        <Link
+          href={`/category/${product.category.slug}` as never}
+          className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500 hover:text-zinc-950"
+        >
+          {product.category.name}
+          <ChevronRight className="size-3" />
+        </Link>
+      )} */}
 
       {/* Title */}
-      <h1 className="mt-3 text-3xl font-medium tracking-tight text-zinc-950 sm:text-4xl lg:text-[2.5rem] lg:leading-[1.05]">
+      <h1
+        className={cn(
+          "text-2xl md:text-3xl font-medium tracking-tight text-zinc-950 sm:text-4xl lg:text-[2.5rem] lg:leading-[1.05]",
+          product.category && "mt-0",
+        )}
+      >
         {product.name}
       </h1>
 
-      {/* Tagline */}
-      <p className="mt-4 text-base leading-relaxed text-zinc-600">
-        {product.tagline}
-      </p>
-
-      {/* Stock badge */}
-      <div className="mt-5 flex items-center gap-2 text-xs">
-        <span
-          className={cn(
-            "inline-block size-2 rounded-full",
-            product.inStock ? "bg-emerald-500" : "bg-zinc-400",
-          )}
-        />
-        <span className={cn(product.inStock ? "text-zinc-700" : "text-zinc-500")}>
-          {product.inStock
-            ? "In stock — ready to ship"
-            : "Out of stock — enquire for restock"}
-        </span>
-        <span className="text-zinc-300">·</span>
-        <span className="font-mono text-zinc-500">{product.sku}</span>
-      </div>
-
-      {/* Hairline */}
-      <div className="mt-8 border-t border-zinc-200" />
-
-      {/* Colours */}
-      {product.colors.length > 0 && (
+      {/* Specifications — 2-col tiles */}
+      {product.specs.length > 0 && (
         <div className="mt-8">
-          <div className="flex items-baseline justify-between">
-            <h3 className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
-              Colour
-            </h3>
-            {selectedColor && (
-              <p className="text-sm text-zinc-700">{selectedColor}</p>
-            )}
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {product.colors.map((c) => {
-              const active = c.name === selectedColor;
-              return (
-                <button
-                  key={c.name}
-                  type="button"
-                  onClick={() => setSelectedColor(c.name)}
-                  aria-pressed={active}
-                  title={c.name}
-                  className={cn(
-                    "grid size-9 place-items-center rounded-full border-2 transition-colors",
-                    active
-                      ? "border-zinc-950"
-                      : "border-transparent hover:border-zinc-300",
-                  )}
-                >
-                  <span
-                    className="block size-7 rounded-full border border-zinc-900/15"
-                    style={{ backgroundColor: c.hex }}
-                  />
-                </button>
-              );
-            })}
-          </div>
+          <h3 className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
+            Specifications
+          </h3>
+          <ul className="mt-5 grid grid-cols-2 gap-3">
+            {product.specs.map((s, i) => (
+              <li
+                key={`${s.label}-${i}`}
+                className="rounded-md border border-zinc-200 px-4 py-3"
+              >
+                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                  {s.label}
+                </p>
+                {s.value && (
+                  <p className="mt-1.5 text-sm font-light leading-snug text-zinc-900">
+                    {s.value}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
+
+      {/* Short description — below specifications */}
+      {product.shortDescription && (
+        <p className="mt-8 text-sm font-light leading-relaxed text-zinc-600">
+          {product.shortDescription}
+        </p>
       )}
 
       {/* CTAs */}
@@ -122,15 +101,15 @@ export default function ProductInfo({ product }: Props) {
         <button
           type="button"
           onClick={() => setEnquiryOpen(true)}
-          className="group/cta inline-flex items-center justify-center gap-2 bg-zinc-950 px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-all hover:gap-3 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2"
+          className="group/cta inline-flex items-center rounded-full justify-center gap-2 bg-zinc-950 px-6 py-3.5 text-sm font-medium tracking-tight text-white hover:gap-3 hover:bg-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950 focus-visible:ring-offset-2"
         >
-          Enquire about this product
-          <ArrowRight className="size-4 transition-transform group-hover/cta:translate-x-0.5" />
+          <SendIcon className="size-4" />
+          Enquire now
         </button>
         <button
           type="button"
           onClick={onShare}
-          className="inline-flex items-center justify-center gap-2 border border-zinc-300 px-6 py-3.5 text-sm font-medium tracking-tight text-zinc-900 transition-colors hover:border-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2"
+          className="inline-flex items-center rounded-full justify-center gap-2 border border-zinc-300 px-6 py-3.5 text-sm font-medium tracking-tight text-zinc-900 hover:border-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-300 focus-visible:ring-offset-2"
         >
           <ShareIcon className="size-4" />
           Share
@@ -147,35 +126,10 @@ export default function ProductInfo({ product }: Props) {
         </p>
       )}
 
-      {/* Features */}
-      <div className="mt-10 border-t border-zinc-200 pt-8">
-        <h3 className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
-          The details
-        </h3>
-        <ul className="mt-5 space-y-4">
-          {product.features.map((f) => (
-            <li key={f.title} className="flex gap-3">
-              <span className="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full bg-zinc-950 text-white">
-                <Check className="size-3" strokeWidth={3} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium tracking-tight text-zinc-950">
-                  {f.title}
-                </p>
-                <p className="mt-0.5 text-sm leading-relaxed text-zinc-600">
-                  {f.description}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
       {/* Enquiry dialog */}
       {enquiryOpen && (
         <EnquiryDialog
           product={product}
-          selectedColor={selectedColor}
           onClose={() => setEnquiryOpen(false)}
         />
       )}
@@ -189,11 +143,9 @@ export default function ProductInfo({ product }: Props) {
 
 function EnquiryDialog({
   product,
-  selectedColor,
   onClose,
 }: {
   product: ProductDetail;
-  selectedColor?: string;
   onClose: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
@@ -251,7 +203,7 @@ function EnquiryDialog({
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="grid size-9 place-items-center rounded-full text-zinc-900 transition-colors hover:bg-zinc-100"
+                className="grid size-9 place-items-center rounded-full text-zinc-900 hover:bg-zinc-100"
               >
                 <X className="size-5" />
               </button>
@@ -265,34 +217,32 @@ function EnquiryDialog({
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <Field label="Your name" name="name" required />
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field
-                  label="Email"
-                  name="email"
-                  type="email"
-                  required
-                />
+                <Field label="Email" name="email" type="email" required />
                 <Field label="Phone" name="phone" type="tel" />
               </div>
               <Field
                 label="Message"
                 name="message"
                 textarea
-                defaultValue={`Hi — I'd like to enquire about the ${product.name}${
-                  selectedColor ? ` (${selectedColor})` : ""
-                }.`}
+                defaultValue={`Hi — I'd like to enquire about the ${product.name}.`}
                 required
               />
 
               <input
                 type="hidden"
-                name="product"
-                value={`${product.name} · ${product.sku}`}
+                name="product_id"
+                value={product.id}
+              />
+              <input
+                type="hidden"
+                name="product_slug"
+                value={product.slug}
               />
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex w-full items-center justify-center gap-2 bg-zinc-950 px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+                className="inline-flex w-full items-center justify-center gap-2 bg-zinc-950 px-6 py-3.5 text-sm font-medium tracking-tight text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
               >
                 {submitting ? "Sending…" : "Send enquiry"}
                 {!submitting && <ArrowRight className="size-4" />}
@@ -314,7 +264,7 @@ function EnquiryDialog({
             <button
               type="button"
               onClick={onClose}
-              className="mt-6 inline-flex items-center justify-center bg-zinc-950 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+              className="mt-6 inline-flex items-center justify-center bg-zinc-950 px-6 py-3 text-sm font-medium text-white hover:bg-zinc-800"
             >
               Close
             </button>
@@ -343,7 +293,7 @@ function Field({
   textarea?: boolean;
 }) {
   const baseCls =
-    "block w-full border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 transition-colors focus:border-zinc-950 focus:outline-none focus:ring-0";
+    "block w-full border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 focus:border-zinc-950 focus:outline-none focus:ring-0";
   return (
     <label className="block">
       <span className="block text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
@@ -392,6 +342,24 @@ function ShareIcon({ className }: { className?: string }) {
       <circle cx="18" cy="19" r="3" />
       <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
       <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    </svg>
+  );
+}
+
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M22 2 11 13" />
+      <path d="m22 2-7 20-4-9-9-4 20-7Z" />
     </svg>
   );
 }

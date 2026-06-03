@@ -1,148 +1,53 @@
-"use client";
-
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import type { ProductDetail } from "@/lib/product-detail";
+import type { ProductDetail } from "@/lib/services/storefront/product-detail.service";
 import { cn } from "@/lib/utils";
-import { siteConfig, mailHref } from "@/lib/site";
-
-type DetailId = "description" | "specifications" | "care" | "shipping";
 
 type Props = {
   product: ProductDetail;
 };
 
 export default function ProductDetails({ product }: Props) {
-  const [open, setOpen] = useState<DetailId | null>("description");
-  const toggle = (id: DetailId) =>
-    setOpen((prev) => (prev === id ? null : id));
+  if (!product.description) return null;
 
   return (
-    <div className="divide-y divide-zinc-200 border-y border-zinc-200">
-      <Section
-        title="Description"
-        isOpen={open === "description"}
-        onToggle={() => toggle("description")}
-      >
-        <div className="space-y-4 text-sm leading-relaxed text-zinc-700 sm:text-base">
-          {product.description.map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
-        </div>
-      </Section>
-
-      <Section
-        title="Specifications"
-        isOpen={open === "specifications"}
-        onToggle={() => toggle("specifications")}
-      >
-        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
-          {product.specs.map((s) => (
-            <div
-              key={s.label}
-              className="flex items-baseline justify-between gap-3 border-b border-zinc-100 py-2.5 sm:border-none sm:py-0"
-            >
-              <dt className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-                {s.label}
-              </dt>
-              <dd className="text-right text-sm text-zinc-900 sm:text-left">
-                {s.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-      </Section>
-
-      <Section
-        title="Care & repair"
-        isOpen={open === "care"}
-        onToggle={() => toggle("care")}
-      >
-        <ul className="space-y-3 text-sm leading-relaxed text-zinc-700">
-          {product.care.map((c, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="mt-2 block size-1 shrink-0 rounded-full bg-zinc-400" />
-              {c}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-5 text-xs text-zinc-500">
-          Every Perry Bag comes with lifetime repairs. If something needs
-          attention, write to us at{" "}
-          <a
-            href={mailHref(siteConfig.email)}
-            className="underline underline-offset-4 hover:text-zinc-950"
-          >
-            {siteConfig.email}
-          </a>
-          .
-        </p>
-      </Section>
-
-      <Section
-        title="Shipping & enquiry"
-        isOpen={open === "shipping"}
-        onToggle={() => toggle("shipping")}
-      >
-        <ul className="space-y-3 text-sm leading-relaxed text-zinc-700">
-          <li className="flex gap-3">
-            <span className="mt-2 block size-1 shrink-0 rounded-full bg-zinc-400" />
-            We&apos;re a catalogue brand — every order begins with an enquiry. Use
-            the button on the right to send us your details.
-          </li>
-          <li className="flex gap-3">
-            <span className="mt-2 block size-1 shrink-0 rounded-full bg-zinc-400" />
-            Pan-India delivery in 3–5 business days. International on request.
-          </li>
-          <li className="flex gap-3">
-            <span className="mt-2 block size-1 shrink-0 rounded-full bg-zinc-400" />
-            Free returns within 14 days, original condition.
-          </li>
-        </ul>
-      </Section>
-    </div>
-  );
-}
-
-function Section({
-  title,
-  isOpen,
-  onToggle,
-  children,
-}: {
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        className="flex w-full items-center justify-between gap-3 py-5 text-left transition-colors hover:text-zinc-950 sm:py-6"
-      >
-        <span className="text-base font-medium tracking-tight text-zinc-950 sm:text-lg">
-          {title}
-        </span>
-        <ChevronDown
-          className={cn(
-            "size-4 text-zinc-500 transition-transform duration-300",
-            isOpen && "rotate-180",
-          )}
-        />
-      </button>
+    <section className="border-t border-zinc-200 pt-8">
+      <h2 className="text-base font-medium tracking-tight text-zinc-950 sm:text-lg">
+        Description
+      </h2>
       <div
         className={cn(
-          "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-          isOpen
-            ? "grid-rows-[1fr] pb-6 opacity-100 sm:pb-8"
-            : "grid-rows-[0fr] opacity-0",
+          "perry-prose mt-5 text-[13px] font-light leading-relaxed text-zinc-700 sm:text-base",
+          // Block spacing
+          "[&>p]:mb-4 [&>p:last-child]:mb-0",
+          "[&>ul]:my-4 [&>ol]:my-4",
+          "[&>blockquote]:my-4",
+          // Headings inside the body copy
+          "[&_h1]:mb-3 [&_h1]:mt-6 [&_h1]:text-xl [&_h1]:font-medium [&_h1]:tracking-tight [&_h1]:text-zinc-950",
+          "[&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-medium [&_h2]:tracking-tight [&_h2]:text-zinc-950",
+          "[&_h3]:mb-2 [&_h3]:mt-5 [&_h3]:text-base [&_h3]:font-medium [&_h3]:tracking-tight [&_h3]:text-zinc-950",
+          // Lists
+          "[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5",
+          "[&_li]:mb-1.5 [&_li:last-child]:mb-0",
+          "[&_li>p]:mb-0",
+          // Inline
+          "[&_strong]:font-medium [&_strong]:text-zinc-950",
+          "[&_b]:font-medium [&_b]:text-zinc-950",
+          // Brand voice: no italic (overrides <em>/<i>)
+          "[&_em]:not-italic [&_i]:not-italic",
+          // Links
+          "[&_a]:text-zinc-950 [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-zinc-600",
+          // Blockquote
+          "[&_blockquote]:border-l-2 [&_blockquote]:border-zinc-300 [&_blockquote]:pl-4 [&_blockquote]:text-zinc-600",
+          // Inline code
+          "[&_code]:rounded [&_code]:bg-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[0.875em]",
+          // Horizontal rule
+          "[&_hr]:my-6 [&_hr]:border-zinc-200",
+          // Images embedded by the editor — keep them responsive
+          "[&_img]:my-4 [&_img]:h-auto [&_img]:max-w-full",
         )}
-      >
-        <div className="overflow-hidden">{children}</div>
-      </div>
-    </div>
+        // Description is authored in the admin panel by an authenticated admin
+        // (RLS prevents non-admin writes). Rendering as HTML is intentional.
+        dangerouslySetInnerHTML={{ __html: product.description }}
+      />
+    </section>
   );
 }

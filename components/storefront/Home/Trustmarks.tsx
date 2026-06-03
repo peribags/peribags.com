@@ -61,7 +61,7 @@ export default function Trustmarks() {
         {/* Centered heading */}
         <div className="mx-auto max-w-2xl text-center" data-aos="fade-up">
           <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-            Why Perry Bags
+            Why peribags
           </p>
           <h2 className="mt-3 text-3xl font-normal leading-[1.1] tracking-tight text-zinc-950 lg:text-4xl">
             Made with care, kept for a lifetime.

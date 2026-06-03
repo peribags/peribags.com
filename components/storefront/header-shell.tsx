@@ -3,16 +3,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ChevronDown, Menu, Search, X } from "lucide-react";
+import { ArrowUpRight, ChevronDown, ChevronRight, Menu, Search, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { CategoryTile } from "@/lib/category-tiles";
-import { siteConfig } from "@/lib/site";
+import { formatPhone, mailHref, siteConfig, telHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { HeaderSearchModal } from "./header-search";
 
 const STATIC_LINKS: { href: string; label: string }[] = [
-  { href: "/category", label: "Shop" },
+  { href: "/", label: "Home" },
+  { href: "/category", label: "Products" },
   { href: "/about", label: "About" },
+  { href: "/our-work", label: "Our Work" },
   { href: "/contact", label: "Contact" },
 ];
 
@@ -118,17 +120,17 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
           : "bg-white text-zinc-950",
       )}
     >
-      <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between px-4 md:px-6 lg:h-20 lg:px-[4vw]">
-        {/* Logo */}
+      <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-3 items-center px-4 md:px-6 lg:h-20 lg:px-[4vw]">
+        {/* Logo — left */}
         <Link
           href="/"
-          className="text-lg font-semibold uppercase transition-opacity hover:opacity-70 lg:text-xl"
+          className="justify-self-start text-lg font-semibold uppercase transition-opacity hover:opacity-70 lg:text-xl"
         >
           {siteConfig.name}
         </Link>
 
-        {/* Nav — right (desktop) */}
-        <nav className="hidden items-center gap-8 lg:flex">
+        {/* Nav — centered (desktop) */}
+        <nav className="hidden items-center justify-self-center gap-8 lg:flex">
           {STATIC_LINKS.map((l) => {
             const active = pathname === l.href;
             const isShop = l.href === "/category";
@@ -179,88 +181,58 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
               <div key={l.href}>{linkEl}</div>
             );
           })}
-
-          {/* Search trigger — desktop */}
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            aria-label="Open search"
-            className={cn(
-              "ml-2 grid size-9 place-items-center transition-colors",
-              transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
-            )}
-          >
-            <Search className="size-4" />
-          </button>
         </nav>
 
-        {/* Mobile actions — search + hamburger */}
-        <div className="flex items-center gap-1 lg:hidden">
+        {/* Right side — search pill (desktop) + hamburger (mobile) */}
+        <div className="flex items-center justify-self-end gap-2">
+          {/* Search pill — desktop */}
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Open search"
             className={cn(
-              "grid size-10 place-items-center transition-colors",
-              transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
+              "hidden w-56 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors lg:inline-flex xl:w-72",
+              transparent
+                ? "border-white/40 text-white/80 hover:border-white hover:text-white"
+                : "border-zinc-300 text-zinc-500 hover:border-zinc-900 hover:text-zinc-700",
             )}
           >
-            <Search className="size-5" />
+            <Search className="size-4 shrink-0" />
+            <span className="truncate">Search bags, categories…</span>
           </button>
 
-        {/* Hamburger — right (mobile) */}
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger asChild>
-            <button
-              type="button"
-              aria-label="Open menu"
-              className={cn(
-                "grid size-10 place-items-center transition-colors lg:hidden",
-                transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
-              )}
+          {/* Hamburger — mobile */}
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open menu"
+                className={cn(
+                  "grid size-10 place-items-center transition-colors lg:hidden",
+                  transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
+                )}
+              >
+                <Menu className="size-5" />
+              </button>
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="w-full max-w-md bg-white p-0"
+              showCloseButton={false}
             >
-              <Menu className="size-5" />
-            </button>
-          </SheetTrigger>
-          <SheetContent side="right" className="w-full max-w-sm bg-white p-0" showCloseButton={false}>
-            <div className="flex h-full flex-col">
-              <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-4">
-                <span className="text-lg font-semibold tracking-tight text-zinc-950">
-                  {siteConfig.name}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Close menu"
-                  className="grid size-10 place-items-center text-zinc-900 transition-colors hover:bg-zinc-100"
-                >
-                  <X className="size-5" />
-                </button>
-              </div>
-              <nav className="flex-1 overflow-y-auto px-4 py-6">
-                <ul className="space-y-1">
-                  {STATIC_LINKS.map((l) => {
-                    const active = pathname === l.href;
-                    return (
-                      <li key={l.href}>
-                        <Link
-                          href={l.href}
-                          onClick={() => setMobileOpen(false)}
-                          className={cn(
-                            "block border-b border-zinc-100 py-4 text-base font-medium tracking-tight transition-colors",
-                            active ? "text-zinc-950" : "text-zinc-700 hover:text-zinc-950",
-                          )}
-                        >
-                          {l.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </nav>
-            </div>
-          </SheetContent>
-        </Sheet>
+              <MobileDrawer
+                pathname={pathname}
+                tiles={tiles}
+                onClose={() => setMobileOpen(false)}
+                onOpenSearch={() => {
+                  setMobileOpen(false);
+                  // Wait for the sheet to finish closing so the body-scroll
+                  // lock from the search modal takes over cleanly.
+                  setTimeout(() => setSearchOpen(true), 220);
+                }}
+              />
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 
@@ -388,6 +360,185 @@ function MegaPanel({
               </div>
             </Link>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Mobile drawer — search pill + main links + categories + featured + contact
+// ────────────────────────────────────────────────────────────────────────────
+
+function MobileDrawer({
+  pathname,
+  tiles,
+  onClose,
+  onOpenSearch,
+}: {
+  pathname: string;
+  tiles: CategoryTile[];
+  onClose: () => void;
+  onOpenSearch: () => void;
+}) {
+  const featured = tiles.slice(0, 2);
+
+  return (
+    <div className="flex h-full flex-col bg-white">
+      {/* Top bar */}
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-5">
+        <span className="text-lg font-semibold uppercase tracking-tight text-zinc-950">
+          {siteConfig.name}
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close menu"
+          className="grid size-10 place-items-center rounded-full text-zinc-900 transition-colors hover:bg-zinc-100"
+        >
+          <X className="size-5" />
+        </button>
+      </div>
+
+      {/* Scrollable body */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Search pill */}
+        <div className="border-b border-zinc-100 p-5">
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="flex w-full items-center gap-3 rounded-full border border-zinc-300 px-4 py-2.5 text-left text-sm text-zinc-500 transition-colors hover:border-zinc-900"
+          >
+            <Search className="size-4 shrink-0" />
+            <span className="truncate">Search bags, categories…</span>
+          </button>
+        </div>
+
+        {/* Main links */}
+        <nav className="border-b border-zinc-100 px-5 py-2">
+          <ul>
+            {STATIC_LINKS.map((l) => {
+              const active = pathname === l.href;
+              return (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    onClick={onClose}
+                    className={cn(
+                      "flex items-center justify-between border-b border-zinc-100 py-3.5 text-base font-medium tracking-tight transition-colors last:border-b-0",
+                      active
+                        ? "text-zinc-950"
+                        : "text-zinc-700 hover:text-zinc-950",
+                    )}
+                  >
+                    {l.label}
+                    <ChevronRight className="size-4 text-zinc-300" />
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Shop by Category */}
+        {tiles.length > 0 && (
+          <div className="border-b border-zinc-100 px-5 py-6">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+              Shop by Category
+            </p>
+            <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3">
+              {tiles.map((tile) => (
+                <li key={tile.id}>
+                  <Link
+                    href={tile.href}
+                    onClick={onClose}
+                    className="block text-sm font-medium tracking-tight text-zinc-700 transition-colors hover:text-zinc-950"
+                  >
+                    {tile.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <Link
+              href="/category"
+              onClick={onClose}
+              className="mt-6 inline-flex items-center gap-1.5 border-b border-zinc-900 pb-0.5 text-sm font-medium tracking-tight text-zinc-950"
+            >
+              View all categories
+              <ArrowUpRight className="size-3.5" />
+            </Link>
+          </div>
+        )}
+
+        {/* Featured */}
+        {featured.length > 0 && (
+          <div className="border-b border-zinc-100 px-5 py-6">
+            <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+              Featured
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              {featured.map((tile) => (
+                <Link
+                  key={tile.id}
+                  href={tile.href}
+                  onClick={onClose}
+                  className="group/m-feat relative block aspect-[4/5] overflow-hidden rounded-md bg-zinc-100"
+                >
+                  {tile.imageUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={tile.imageUrl}
+                      alt={tile.name}
+                      loading="lazy"
+                      decoding="async"
+                      className="absolute inset-0 size-full object-cover"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-3">
+                    <h4 className="text-sm font-medium tracking-tight text-white">
+                      {tile.name}
+                    </h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Contact */}
+        <div className="px-5 py-6">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+            Get in touch
+          </p>
+          <ul className="mt-4 space-y-3 text-sm">
+            <li>
+              <a
+                href={mailHref(siteConfig.email)}
+                className="text-zinc-700 underline-offset-4 hover:text-zinc-950 hover:underline"
+              >
+                {siteConfig.email}
+              </a>
+            </li>
+            <li>
+              <a
+                href={telHref(siteConfig.phone)}
+                className="text-zinc-700 underline-offset-4 hover:text-zinc-950 hover:underline"
+              >
+                {formatPhone(siteConfig.phone)}
+              </a>
+            </li>
+            <li>
+              <a
+                href={siteConfig.links.whatsapp}
+                target="_blank"
+                rel="noreferrer"
+                className="text-zinc-700 underline-offset-4 hover:text-zinc-950 hover:underline"
+              >
+                Chat on WhatsApp
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     </div>

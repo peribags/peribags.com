@@ -238,7 +238,7 @@ function SlideView({
 
       {/* Dark overlay for text legibility — only when the slide has overlay copy. */}
       {hasText && (
-        <div className="absolute inset-0 bg-gradient-to-tr from-black/65 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/50 via-transparent to-transparent" />
       )}
 
       {/* Content — bottom-left */}

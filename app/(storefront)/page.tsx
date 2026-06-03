@@ -1,3 +1,4 @@
+import AboutEditorial from "@/components/storefront/Home/AboutEditorial";
 import CatalogueCTA from "@/components/storefront/Home/CatalogueCTA";
 import EditorialStory from "@/components/storefront/Home/EditorialStory";
 import GoogleReviews from "@/components/storefront/Home/GoogleReviews";
@@ -70,7 +71,7 @@ export default async function HomePage() {
       />
       <HomeSections />
 
-      <EditorialStory
+      <AboutEditorial
         kicker="Our Craft"
         heading={
           <>
@@ -79,14 +80,16 @@ export default async function HomePage() {
             Made to last.
           </>
         }
-        body="Every Perry Bag is cut, stitched, and finished by a small team of artisans at our workshop. We work with full-grain leather chosen for character — pieces that wear in, not out."
-        imageSrc="/19331.jpg"
-        imageAlt="Hands working leather at the Perry Bags workshop"
+        body="Every peribags bag is cut, stitched, and finished by a small team of artisans at our workshop. We work with full-grain leather chosen for character — pieces that wear in, not out."
+        imageLeftSrc="https://images.peribags.com/categories/1780415681240-816010dc-5ad4-4b50-91fe-bb58f82e95bd.webp"
+        imageLeftAlt="Inside our workshop"
+        imageRightSrc="https://images.peribags.com/categories/1780414884097-0d2a55fe-86fa-435a-8ea2-75254898edfd.webp"
+        imageRightAlt="Hand-stitched detail"
         ctaHref="/about"
         ctaLabel="Read our story"
       />
 
-      <EditorialStory
+      {/* <EditorialStory
         kicker="The Material"
         heading={
           <>
@@ -102,7 +105,7 @@ export default async function HomePage() {
         ctaHref="/about"
         ctaLabel="On materials"
         background="#ffffff"
-      />
+      /> */}
 
       <ReelsSection />
 
@@ -110,7 +113,7 @@ export default async function HomePage() {
 
       <GoogleReviews />
 
-      <InstagramFeed />
+      {/* <InstagramFeed /> */}
 
       <CatalogueCTA />
     </>

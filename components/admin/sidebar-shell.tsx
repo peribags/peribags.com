@@ -35,7 +35,7 @@ function SidebarHeader({ collapsed }: { collapsed: boolean }) {
             href="/admin"
             className="text-foreground truncate text-sm font-semibold tracking-tight"
           >
-            Perry Bags
+            peribags
           </Link>
           <span className="text-muted-foreground mt-0.5 inline-flex items-center gap-1 text-[10px] tracking-wide uppercase">
             <Store className="size-2.5" />

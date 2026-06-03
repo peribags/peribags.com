@@ -1,12 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import {
-  ArrowUpRight,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import {
   ChevronDown,
   ChevronRight,
-  ImageIcon,
   SlidersHorizontal,
   X,
 } from "lucide-react";
@@ -15,21 +21,111 @@ import type { CategoryTile } from "@/lib/category-tiles";
 import {
   type CatalogueProduct,
   type SortValue,
-  colorOptions,
-  materialOptions,
+  readMulti,
   sortOptions,
-  subcategoryLabel,
+  specKeyToParam,
+  writeMulti,
 } from "@/lib/catalogue";
+import { ShowcaseProductCard } from "@/components/storefront/Product/ShowcaseProductCard";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 12;
+
+type AvailabilityValue = "in-stock" | "out-of-stock";
+
+export type SubcategoryOption = {
+  slug: string;
+  name: string;
+};
 
 type Props = {
   category: CategoryTile;
   description?: string;
   products: CatalogueProduct[];
-  subcategories: string[];
+  subcategories: SubcategoryOption[];
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Derive filter facets from the product list. Keys + values are computed
+// once per product set so the panel reflects whatever data the API returns.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type SpecFacet = {
+  key: string;
+  paramKey: string;
+  values: string[];
+};
+
+function buildSpecFacets(products: CatalogueProduct[]): SpecFacet[] {
+  const map = new Map<string, Set<string>>();
+  for (const p of products) {
+    for (const [k, vs] of Object.entries(p.specifications)) {
+      if (!map.has(k)) map.set(k, new Set());
+      const bucket = map.get(k)!;
+      for (const v of vs) bucket.add(v);
+    }
+  }
+  return Array.from(map.entries())
+    .map(([key, valuesSet]) => ({
+      key,
+      paramKey: specKeyToParam(key),
+      values: Array.from(valuesSet).sort((a, b) => a.localeCompare(b)),
+    }))
+    .sort((a, b) => a.key.localeCompare(b.key));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// URL ↔ state
+// ─────────────────────────────────────────────────────────────────────────────
+
+type FilterState = {
+  subcategory: string[];
+  /** Map of spec display key → selected values. */
+  specs: Record<string, string[]>;
+  availability: AvailabilityValue[];
+  sort: SortValue;
+};
+
+function readFiltersFromUrl(
+  params: URLSearchParams | ReturnType<typeof useSearchParams>,
+  specFacets: SpecFacet[],
+): FilterState {
+  const specs: Record<string, string[]> = {};
+  for (const facet of specFacets) {
+    const values = readMulti(params, facet.paramKey);
+    if (values.length > 0) specs[facet.key] = values;
+  }
+
+  const rawSort = params.get("sort") as SortValue | null;
+  const sort: SortValue = sortOptions.some((o) => o.value === rawSort)
+    ? (rawSort as SortValue)
+    : "featured";
+
+  return {
+    subcategory: readMulti(params, "subcategory"),
+    specs,
+    availability: readMulti(params, "availability").filter(
+      (v): v is AvailabilityValue => v === "in-stock" || v === "out-of-stock",
+    ),
+    sort,
+  };
+}
+
+function writeFiltersToUrl(
+  current: URLSearchParams,
+  state: FilterState,
+  specFacets: SpecFacet[],
+): URLSearchParams {
+  const next = new URLSearchParams(current.toString());
+  writeMulti(next, "subcategory", state.subcategory);
+  writeMulti(next, "availability", state.availability);
+  for (const facet of specFacets) {
+    writeMulti(next, facet.paramKey, state.specs[facet.key] ?? []);
+  }
+  if (state.sort === "featured") next.delete("sort");
+  else next.set("sort", state.sort);
+  return next;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page
@@ -41,30 +137,54 @@ export default function CategoryListing({
   products,
   subcategories,
 }: Props) {
-  // ── Filter state ──────────────────────────────────────────────────────────
-  const [subcategory, setSubcategory] = useState<string>("all");
-  const [materials, setMaterials] = useState<Set<string>>(new Set());
-  const [colors, setColors] = useState<Set<string>>(new Set());
-  const [inStockOnly, setInStockOnly] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [, startTransition] = useTransition();
 
-  // ── UI state ──────────────────────────────────────────────────────────────
-  const [sort, setSort] = useState<SortValue>("featured");
+  const specFacets = useMemo(() => buildSpecFacets(products), [products]);
+
+  // URL is the source of truth for filter state. We re-derive on every render.
+  const state = useMemo(
+    () => readFiltersFromUrl(searchParams, specFacets),
+    [searchParams, specFacets],
+  );
+
+  // Local UI state — sort dropdown, mobile sheet, paginated visible count.
   const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
 
-  // ── Derived ───────────────────────────────────────────────────────────────
+  // Reset pagination when filters change.
+  useEffect(() => {
+    setPage(1);
+  }, [searchParams]);
+
+  // ── Filter + sort ────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
+    const subSet = new Set(state.subcategory);
+    const wantInStock = state.availability.includes("in-stock");
+    const wantOutOfStock = state.availability.includes("out-of-stock");
+    const hasAvailFilter = wantInStock !== wantOutOfStock;
+
     let arr = products;
-    if (subcategory !== "all")
-      arr = arr.filter((p) => p.subcategory === subcategory);
-    if (materials.size > 0) arr = arr.filter((p) => materials.has(p.material));
-    if (colors.size > 0)
-      arr = arr.filter((p) => p.colors.some((c) => colors.has(c)));
-    if (inStockOnly) arr = arr.filter((p) => p.inStock !== false);
+    if (subSet.size > 0)
+      arr = arr.filter((p) =>
+        p.subcategorySlugs.some((s) => subSet.has(s)),
+      );
+    if (hasAvailFilter)
+      arr = arr.filter((p) => (wantInStock ? p.inStock : !p.inStock));
+
+    for (const [key, selected] of Object.entries(state.specs)) {
+      if (selected.length === 0) continue;
+      const wanted = new Set(selected);
+      arr = arr.filter((p) =>
+        (p.specifications[key] ?? []).some((v) => wanted.has(v)),
+      );
+    }
 
     const sorted = [...arr];
-    switch (sort) {
+    switch (state.sort) {
       case "price-low":
         sorted.sort(
           (a, b) => (a.pricePaise ?? Infinity) - (b.pricePaise ?? Infinity),
@@ -80,7 +200,7 @@ export default function CategoryListing({
         break;
     }
     return sorted;
-  }, [products, subcategory, materials, colors, inStockOnly, sort]);
+  }, [products, state]);
 
   const visible = useMemo(
     () => filtered.slice(0, page * PAGE_SIZE),
@@ -88,17 +208,7 @@ export default function CategoryListing({
   );
   const hasMore = visible.length < filtered.length;
 
-  const activeFilterCount =
-    (subcategory !== "all" ? 1 : 0) +
-    materials.size +
-    colors.size +
-    (inStockOnly ? 1 : 0);
-
-  // ── Effects ───────────────────────────────────────────────────────────────
-  useEffect(() => {
-    setPage(1);
-  }, [subcategory, materials, colors, inStockOnly, sort]);
-
+  // ── Infinite scroll sentinel ─────────────────────────────────────────────
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!hasMore) return;
@@ -114,6 +224,7 @@ export default function CategoryListing({
     return () => obs.disconnect();
   }, [hasMore]);
 
+  // ── Sort dropdown outside-click / Escape ─────────────────────────────────
   useEffect(() => {
     if (!sortOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -131,54 +242,87 @@ export default function CategoryListing({
     };
   }, [sortOpen]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
-  const toggleSet = useCallback(
-    (setter: React.Dispatch<React.SetStateAction<Set<string>>>) => (v: string) => {
-      setter((prev) => {
-        const next = new Set(prev);
-        if (next.has(v)) next.delete(v);
-        else next.add(v);
-        return next;
+  // ── State mutators — every change rewrites the URL ───────────────────────
+  const pushState = useCallback(
+    (next: FilterState) => {
+      const params = writeFiltersToUrl(
+        new URLSearchParams(searchParams.toString()),
+        next,
+        specFacets,
+      );
+      const qs = params.toString();
+      startTransition(() => {
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
       });
     },
-    [],
+    [pathname, router, searchParams, specFacets],
   );
 
-  const toggleMaterial = toggleSet(setMaterials);
-  const toggleColor = toggleSet(setColors);
+  const toggleSubcategory = (slug: string) => {
+    const set = new Set(state.subcategory);
+    if (set.has(slug)) set.delete(slug);
+    else set.add(slug);
+    pushState({ ...state, subcategory: Array.from(set) });
+  };
+
+  const toggleSpec = (key: string, value: string) => {
+    const current = state.specs[key] ?? [];
+    const set = new Set(current);
+    if (set.has(value)) set.delete(value);
+    else set.add(value);
+    const nextSpecs = { ...state.specs };
+    if (set.size === 0) delete nextSpecs[key];
+    else nextSpecs[key] = Array.from(set);
+    pushState({ ...state, specs: nextSpecs });
+  };
+
+  const toggleAvailability = (v: AvailabilityValue) => {
+    const set = new Set(state.availability);
+    if (set.has(v)) set.delete(v);
+    else set.add(v);
+    pushState({ ...state, availability: Array.from(set) });
+  };
+
+  const setSort = (sort: SortValue) =>
+    pushState({ ...state, sort });
 
   const resetFilters = useCallback(() => {
-    setSubcategory("all");
-    setMaterials(new Set());
-    setColors(new Set());
-    setInStockOnly(false);
-  }, []);
+    startTransition(() => {
+      router.replace(pathname, { scroll: false });
+    });
+  }, [pathname, router]);
+
+  // ── Derived UI bits ──────────────────────────────────────────────────────
+  const activeChips = useMemo(
+    () => collectActiveChips(state, subcategories),
+    [state, subcategories],
+  );
+  const activeFilterCount = activeChips.length;
 
   const sortLabel =
-    sortOptions.find((o) => o.value === sort)?.label ?? "Featured";
+    sortOptions.find((o) => o.value === state.sort)?.label ?? "Featured";
 
   const filterPanel = (
     <AccordionFilter
-      subcategory={subcategory}
+      subcategory={state.subcategory}
       subcategories={subcategories}
-      onSubcategory={setSubcategory}
-      materials={materials}
-      onToggleMaterial={toggleMaterial}
-      colors={colors}
-      onToggleColor={toggleColor}
-      inStockOnly={inStockOnly}
-      onToggleInStock={() => setInStockOnly((s) => !s)}
+      onToggleSubcategory={toggleSubcategory}
+      specFacets={specFacets}
+      specs={state.specs}
+      onToggleSpec={toggleSpec}
+      availability={state.availability}
+      onToggleAvailability={toggleAvailability}
     />
   );
 
   return (
     <section className="bg-white">
       <div className="mx-auto max-w-[1600px] px-4 pt-8 pb-16 md:px-6 md:pt-12 md:pb-20 lg:px-[4vw] lg:pt-14 lg:pb-24">
-        {/* ── Breadcrumb ─────────────────────────────────────────────────── */}
+        {/* Breadcrumb */}
         <nav aria-label="Breadcrumb">
           <ol className="flex items-center gap-1.5 text-xs text-zinc-500">
             <li>
-              <Link href="/" className="transition-colors hover:text-zinc-900">
+              <Link href="/" className="hover:text-zinc-900">
                 Home
               </Link>
             </li>
@@ -188,7 +332,7 @@ export default function CategoryListing({
             <li>
               <Link
                 href="/category"
-                className="transition-colors hover:text-zinc-900"
+                className="hover:text-zinc-900"
               >
                 Categories
               </Link>
@@ -200,17 +344,14 @@ export default function CategoryListing({
           </ol>
         </nav>
 
-        {/* ── Header ─────────────────────────────────────────────────────── */}
-        <header
-          className="mt-6 flex flex-col gap-3 border-b border-zinc-200 pb-6 md:mt-8 md:flex-row md:items-end md:justify-between md:gap-6 md:pb-8"
-          data-aos="fade-up"
-        >
+        {/* Header */}
+        <header className="mt-6 flex flex-col gap-3 border-b border-zinc-200 pb-6 md:mt-8 md:flex-row md:items-end md:justify-between md:gap-6 md:pb-8">
           <div>
             <h1 className="text-2xl font-medium tracking-tight text-zinc-950 sm:text-3xl lg:text-4xl">
               {category.name}
             </h1>
             {description && (
-              <p className="mt-2 max-w-lg tracking-wide text-sm! font-light text-zinc-600 sm:text-base">
+              <p className="mt-2 max-w-2xl text-sm text-zinc-600 sm:text-base">
                 {description}
               </p>
             )}
@@ -220,14 +361,13 @@ export default function CategoryListing({
           </p>
         </header>
 
-        {/* ── Toolbar (mobile filter trigger + sort, sticky on mobile) ────── */}
-        <div className="sticky top-0 z-10 -mx-4 mt-4 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6 lg:static lg:mx-0 lg:mt-6 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
-          {/* Mobile filter trigger */}
+        {/* Toolbar */}
+        <div className="sticky top-16 z-10 -mx-4 mt-4 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6 lg:static lg:mx-0 lg:mt-6 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
             <SheetTrigger asChild>
               <button
                 type="button"
-                className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-900 transition-colors hover:border-zinc-900 lg:hidden"
+                className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-900 hover:border-zinc-900 lg:hidden"
               >
                 <SlidersHorizontal className="size-3.5" />
                 Filter
@@ -254,23 +394,21 @@ export default function CategoryListing({
             </SheetContent>
           </Sheet>
 
-          {/* Spacer on lg (filters shown in sidebar) */}
           <span className="hidden lg:block" />
 
-          {/* Sort */}
           <div data-sort-menu className="relative">
             <button
               type="button"
               onClick={() => setSortOpen((s) => !s)}
               aria-expanded={sortOpen}
               aria-haspopup="listbox"
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-900 transition-colors hover:border-zinc-900"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-900 hover:border-zinc-900"
             >
               <span className="hidden text-zinc-500 sm:inline">Sort by:</span>{" "}
               {sortLabel}
               <ChevronDown
                 className={cn(
-                  "size-3.5 transition-transform duration-300",
+                  "size-3.5",
                   sortOpen && "rotate-180",
                 )}
               />
@@ -281,7 +419,7 @@ export default function CategoryListing({
                 className="absolute right-0 top-[calc(100%+8px)] z-30 w-60 overflow-hidden rounded-md border border-zinc-200 bg-white shadow-[0_24px_48px_-24px_rgba(15,15,15,0.18)]"
               >
                 {sortOptions.map((opt) => {
-                  const active = opt.value === sort;
+                  const active = opt.value === state.sort;
                   return (
                     <li key={opt.value}>
                       <button
@@ -293,7 +431,7 @@ export default function CategoryListing({
                           setSortOpen(false);
                         }}
                         className={cn(
-                          "block w-full px-4 py-2.5 text-left text-sm transition-colors",
+                          "block w-full px-4 py-2.5 text-left text-sm",
                           active
                             ? "bg-zinc-50 font-medium text-zinc-950"
                             : "text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950",
@@ -309,7 +447,7 @@ export default function CategoryListing({
           </div>
         </div>
 
-        {/* ── Main grid: sidebar + products ──────────────────────────────── */}
+        {/* Main grid: sidebar + products */}
         <div className="mt-6 grid gap-x-10 gap-y-0 md:mt-8 lg:grid-cols-[260px_1fr]">
           {/* Sidebar (lg+) */}
           <aside className="hidden lg:block">
@@ -341,24 +479,46 @@ export default function CategoryListing({
 
           {/* Right column */}
           <div className="min-w-0">
+            {/* Active filter chips */}
+            {activeChips.length > 0 && (
+              <ActiveChips
+                chips={activeChips}
+                onRemove={(chip) => {
+                  switch (chip.kind) {
+                    case "subcategory":
+                      toggleSubcategory(chip.value);
+                      break;
+                    case "availability":
+                      toggleAvailability(chip.value as AvailabilityValue);
+                      break;
+                    case "spec":
+                      toggleSpec(chip.specKey!, chip.value);
+                      break;
+                  }
+                }}
+                onClearAll={resetFilters}
+              />
+            )}
+
             {visible.length === 0 ? (
               <EmptyState onReset={resetFilters} />
             ) : (
               <>
                 <div
-                  className="grid grid-cols-2 gap-x-3 gap-y-10 md:grid-cols-3 md:gap-x-4 md:gap-y-12 lg:gap-x-6 xl:grid-cols-4"
-                  data-aos="fade-up"
-                  data-aos-delay="120"
+                  className={cn(
+                    "grid grid-cols-2 gap-x-3 gap-y-10 md:gap-x-4 md:gap-y-12 lg:grid-cols-4 lg:gap-x-6",
+                    activeChips.length > 0 ? "mt-6" : "mt-0",
+                  )}
                 >
                   {visible.map((p) => (
-                    <ProductCard key={p.id} product={p} />
+                    <ShowcaseProductCard key={p.id} product={p} />
                   ))}
                 </div>
 
                 <div ref={sentinelRef} className="mt-14 flex justify-center">
                   {hasMore ? (
                     <div className="flex items-center gap-2 text-xs text-zinc-400">
-                      <span className="block size-1.5 animate-pulse rounded-full bg-zinc-400" />
+                      <span className="block size-1.5 rounded-full bg-zinc-400" />
                       Loading more
                     </div>
                   ) : (
@@ -378,165 +538,193 @@ export default function CategoryListing({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Accordion filter — one section open at a time
+// Active filter chips
 // ─────────────────────────────────────────────────────────────────────────────
 
-type AccordionId = "subcategory" | "material" | "color" | "availability";
+type ActiveChip =
+  | { kind: "subcategory"; label: string; value: string }
+  | { kind: "availability"; label: string; value: string }
+  | { kind: "spec"; label: string; value: string; specKey: string };
+
+function collectActiveChips(
+  state: FilterState,
+  subcategories: SubcategoryOption[],
+): ActiveChip[] {
+  const chips: ActiveChip[] = [];
+
+  const byslug = new Map(subcategories.map((s) => [s.slug, s.name]));
+  for (const slug of state.subcategory) {
+    const name = byslug.get(slug);
+    if (!name) continue;
+    chips.push({
+      kind: "subcategory",
+      label: name,
+      value: slug,
+    });
+  }
+
+  for (const v of state.availability) {
+    chips.push({
+      kind: "availability",
+      label: v === "in-stock" ? "In stock" : "Out of stock",
+      value: v,
+    });
+  }
+
+  for (const [key, values] of Object.entries(state.specs)) {
+    for (const value of values) {
+      chips.push({ kind: "spec", label: `${key}: ${value}`, value, specKey: key });
+    }
+  }
+
+  return chips;
+}
+
+function ActiveChips({
+  chips,
+  onRemove,
+  onClearAll,
+}: {
+  chips: ActiveChip[];
+  onRemove: (chip: ActiveChip) => void;
+  onClearAll: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-b border-zinc-100 pb-4">
+      {chips.map((chip) => (
+        <button
+          key={
+            chip.kind === "spec"
+              ? `spec-${chip.specKey}-${chip.value}`
+              : `${chip.kind}-${chip.value}`
+          }
+          type="button"
+          onClick={() => onRemove(chip)}
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs text-zinc-700 hover:border-zinc-900 hover:text-zinc-950"
+        >
+          {chip.label}
+          <X className="size-3" aria-hidden />
+          <span className="sr-only">Remove filter</span>
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={onClearAll}
+        className="ml-1 text-xs text-zinc-500 underline-offset-4 hover:text-zinc-950 hover:underline"
+      >
+        Clear all
+      </button>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Accordion filter
+// ─────────────────────────────────────────────────────────────────────────────
+
+type AccordionId = string;
 
 function AccordionFilter({
   subcategory,
   subcategories,
-  onSubcategory,
-  materials,
-  onToggleMaterial,
-  colors,
-  onToggleColor,
-  inStockOnly,
-  onToggleInStock,
+  onToggleSubcategory,
+  specFacets,
+  specs,
+  onToggleSpec,
+  availability,
+  onToggleAvailability,
 }: {
-  subcategory: string;
-  subcategories: string[];
-  onSubcategory: (s: string) => void;
-  materials: Set<string>;
-  onToggleMaterial: (m: string) => void;
-  colors: Set<string>;
-  onToggleColor: (c: string) => void;
-  inStockOnly: boolean;
-  onToggleInStock: () => void;
+  subcategory: string[];
+  subcategories: SubcategoryOption[];
+  onToggleSubcategory: (slug: string) => void;
+  specFacets: SpecFacet[];
+  specs: Record<string, string[]>;
+  onToggleSpec: (key: string, value: string) => void;
+  availability: AvailabilityValue[];
+  onToggleAvailability: (v: AvailabilityValue) => void;
 }) {
-  // One open at a time. Default to "subcategory" so the panel doesn't load blank.
-  const [open, setOpen] = useState<AccordionId | null>(
-    subcategories.length > 1 ? "subcategory" : "material",
-  );
+  const showSubcategory = subcategories.length > 0;
+
+  const initialOpen: AccordionId =
+    showSubcategory ? "subcategory" : specFacets[0]?.key ?? "availability";
+  const [open, setOpen] = useState<AccordionId | null>(initialOpen);
   const toggle = (id: AccordionId) =>
     setOpen((prev) => (prev === id ? null : id));
 
   return (
     <div className="divide-y divide-zinc-200">
-      {subcategories.length > 1 && (
+      {showSubcategory && (
         <AccordionSection
-          id="subcategory"
           title="Category"
           summary={
-            subcategory === "all" ? "All" : subcategoryLabel(subcategory)
+            subcategory.length === 0 ? "All" : `${subcategory.length} selected`
           }
           isOpen={open === "subcategory"}
           onToggle={() => toggle("subcategory")}
         >
           <ul className="space-y-2.5">
-            {subcategories.map((sub) => {
-              const active = subcategory === sub;
-              return (
-                <li key={sub}>
-                  <label className="flex cursor-pointer items-center gap-3 text-sm text-zinc-700">
-                    <input
-                      type="radio"
-                      name="subcategory"
-                      checked={active}
-                      onChange={() => onSubcategory(sub)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={cn(
-                        "grid size-4 shrink-0 place-items-center rounded-full border transition-colors",
-                        active
-                          ? "border-zinc-950"
-                          : "border-zinc-300",
-                      )}
-                    >
-                      {active && (
-                        <span className="block size-2 rounded-full bg-zinc-950" />
-                      )}
-                    </span>
-                    {subcategoryLabel(sub)}
-                  </label>
-                </li>
-              );
-            })}
+            {subcategories.map((sub) => (
+              <li key={sub.slug}>
+                <CheckRow
+                  label={sub.name}
+                  active={subcategory.includes(sub.slug)}
+                  onChange={() => onToggleSubcategory(sub.slug)}
+                />
+              </li>
+            ))}
           </ul>
         </AccordionSection>
       )}
 
-      <AccordionSection
-        id="material"
-        title="Material"
-        summary={materials.size === 0 ? "Any" : `${materials.size} selected`}
-        isOpen={open === "material"}
-        onToggle={() => toggle("material")}
-      >
-        <ul className="space-y-2.5">
-          {materialOptions.map((m) => (
-            <li key={m}>
-              <CheckRow
-                label={m}
-                active={materials.has(m)}
-                onChange={() => onToggleMaterial(m)}
-              />
-            </li>
-          ))}
-        </ul>
-      </AccordionSection>
+      {specFacets.map((facet) => {
+        const selected = specs[facet.key] ?? [];
+        return (
+          <AccordionSection
+            key={facet.key}
+            title={facet.key}
+            summary={selected.length === 0 ? "Any" : `${selected.length} selected`}
+            isOpen={open === facet.key}
+            onToggle={() => toggle(facet.key)}
+          >
+            <ul className="space-y-2.5">
+              {facet.values.map((v) => (
+                <li key={v}>
+                  <CheckRow
+                    label={v}
+                    active={selected.includes(v)}
+                    onChange={() => onToggleSpec(facet.key, v)}
+                  />
+                </li>
+              ))}
+            </ul>
+          </AccordionSection>
+        );
+      })}
 
       <AccordionSection
-        id="color"
-        title="Colour"
-        summary={colors.size === 0 ? "Any" : `${colors.size} selected`}
-        isOpen={open === "color"}
-        onToggle={() => toggle("color")}
-      >
-        <div className="flex flex-wrap gap-2">
-          {colorOptions.map((c) => {
-            const active = colors.has(c.name);
-            return (
-              <button
-                key={c.name}
-                type="button"
-                onClick={() => onToggleColor(c.name)}
-                aria-pressed={active}
-                title={c.name}
-                className={cn(
-                  "grid size-8 place-items-center rounded-full border-2 transition-all",
-                  active
-                    ? "border-zinc-950"
-                    : "border-transparent hover:border-zinc-300",
-                )}
-              >
-                <span
-                  className="block size-6 rounded-full border border-zinc-900/15"
-                  style={{ backgroundColor: c.hex }}
-                />
-              </button>
-            );
-          })}
-        </div>
-      </AccordionSection>
-
-      <AccordionSection
-        id="availability"
         title="Availability"
-        summary={inStockOnly ? "In stock only" : "All items"}
+        summary={
+          availability.length === 0 ? "All" : `${availability.length} selected`
+        }
         isOpen={open === "availability"}
         onToggle={() => toggle("availability")}
       >
-        <label className="flex cursor-pointer items-center justify-between gap-4 text-sm text-zinc-700">
-          In stock only
-          <button
-            type="button"
-            onClick={onToggleInStock}
-            aria-pressed={inStockOnly}
-            className={cn(
-              "relative h-6 w-11 shrink-0 rounded-full transition-colors",
-              inStockOnly ? "bg-zinc-950" : "bg-zinc-300",
-            )}
-          >
-            <span
-              className={cn(
-                "absolute top-0.5 size-5 rounded-full bg-white transition-transform",
-                inStockOnly ? "translate-x-[1.375rem]" : "translate-x-0.5",
-              )}
+        <ul className="space-y-2.5">
+          <li>
+            <CheckRow
+              label="In stock"
+              active={availability.includes("in-stock")}
+              onChange={() => onToggleAvailability("in-stock")}
             />
-          </button>
-        </label>
+          </li>
+          <li>
+            <CheckRow
+              label="Out of stock"
+              active={availability.includes("out-of-stock")}
+              onChange={() => onToggleAvailability("out-of-stock")}
+            />
+          </li>
+        </ul>
       </AccordionSection>
     </div>
   );
@@ -549,7 +737,6 @@ function AccordionSection({
   onToggle,
   children,
 }: {
-  id: AccordionId;
   title: string;
   summary?: string;
   isOpen: boolean;
@@ -571,20 +758,15 @@ function AccordionSection({
           {!isOpen && summary && <span>{summary}</span>}
           <ChevronDown
             className={cn(
-              "size-4 text-zinc-500 transition-transform duration-300",
+              "size-4 text-zinc-500",
               isOpen && "rotate-180",
             )}
           />
         </span>
       </button>
-      <div
-        className={cn(
-          "grid transition-[grid-template-rows,opacity] duration-300 ease-out",
-          isOpen ? "mt-4 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
-        )}
-      >
-        <div className="overflow-hidden">{children}</div>
-      </div>
+      {isOpen && (
+        <div className="mt-4">{children}</div>
+      )}
     </div>
   );
 }
@@ -608,7 +790,7 @@ function CheckRow({
       />
       <span
         className={cn(
-          "grid size-4 shrink-0 place-items-center rounded-sm border transition-colors",
+          "grid size-4 shrink-0 place-items-center rounded-sm border",
           active ? "border-zinc-950 bg-zinc-950" : "border-zinc-300",
         )}
       >
@@ -634,7 +816,7 @@ function CheckRow({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mobile sheet wrapper
+// Mobile sheet
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MobileFilterSheet({
@@ -665,7 +847,7 @@ function MobileFilterSheet({
           type="button"
           onClick={onClose}
           aria-label="Close filters"
-          className="grid size-9 place-items-center rounded-full text-zinc-900 transition-colors hover:bg-zinc-100"
+          className="grid size-9 place-items-center rounded-full text-zinc-900 hover:bg-zinc-100"
         >
           <X className="size-5" />
         </button>
@@ -684,90 +866,12 @@ function MobileFilterSheet({
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
+          className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-medium text-white hover:bg-zinc-800"
         >
           Show {resultCount} {resultCount === 1 ? "result" : "results"}
         </button>
       </div>
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Product card — same look as ProductShowcase
-// ─────────────────────────────────────────────────────────────────────────────
-
-function ProductCard({ product }: { product: CatalogueProduct }) {
-  const inStock = product.inStock ?? true;
-
-  return (
-    <Link href={product.href} className="group/card block">
-      <div
-        className="relative aspect-[3/4.25] overflow-hidden"
-        style={{ backgroundColor: "#F5F1EA" }}
-      >
-        {product.imageUrl ? (
-          <div className="absolute inset-0 grid place-items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={product.imageUrl}
-              alt={product.name}
-              loading="lazy"
-              decoding="async"
-              className={cn(
-                "max-h-full max-w-full object-contain transition-transform duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/card:scale-[1.06]",
-                !inStock && "opacity-70",
-              )}
-            />
-          </div>
-        ) : (
-          <div className="absolute inset-0 grid place-items-center text-zinc-400">
-            <ImageIcon className="size-8" aria-hidden />
-          </div>
-        )}
-
-        <span
-          className={cn(
-            "absolute left-3 top-3 inline-flex items-center px-2 py-1 text-[10px] font-medium uppercase tracking-[0.2em]",
-            inStock ? "bg-zinc-950 text-white" : "bg-white text-zinc-900",
-          )}
-        >
-          {inStock ? "New" : "Out of stock"}
-        </span>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden p-3 md:block">
-          <div
-            style={{
-              transitionProperty: "opacity, translate",
-              transitionDuration: "400ms",
-              transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-            className="translate-y-3 opacity-0 group-hover/card:translate-y-0 group-hover/card:opacity-100"
-          >
-            <div className="flex items-center justify-between bg-white/95 px-3.5 py-2.5 backdrop-blur">
-              <span className="text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-950">
-                View product
-              </span>
-              <ArrowUpRight className="size-3.5 text-zinc-950" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-5 text-center">
-        <h3 className="text-sm font-normal tracking-tight text-zinc-950 sm:text-base">
-          <span
-            className={cn(
-              "relative inline-block",
-              "md:after:absolute md:after:inset-x-0 md:after:-bottom-0.5 md:after:h-px md:after:origin-center md:after:scale-x-0 md:after:bg-zinc-950 md:after:transition-transform md:after:duration-500 md:after:ease-out md:after:content-['']",
-              "md:group-hover/card:after:scale-x-100",
-            )}
-          >
-            {product.name}
-          </span>
-        </h3>
-      </div>
-    </Link>
   );
 }
 
@@ -787,7 +891,7 @@ function EmptyState({ onReset }: { onReset: () => void }) {
       <button
         type="button"
         onClick={onReset}
-        className="mt-6 inline-flex items-center rounded-full border border-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-950 hover:text-white"
+        className="mt-6 inline-flex items-center rounded-full border border-zinc-900 px-5 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-950 hover:text-white"
       >
         Clear all filters
       </button>

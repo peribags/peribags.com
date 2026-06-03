@@ -43,7 +43,7 @@ export default function ProductGallery({ images, alt }: Props) {
                   onClick={() => setActive(i)}
                   aria-label={`View image ${i + 1}`}
                   className={cn(
-                    "relative block aspect-square w-16 overflow-hidden border-2 transition-colors lg:w-20",
+                    "relative block aspect-4/5 w-16 overflow-hidden border-2 transition-colors lg:w-20",
                     isActive
                       ? "border-zinc-950"
                       : "border-transparent hover:border-zinc-300",
@@ -56,7 +56,7 @@ export default function ProductGallery({ images, alt }: Props) {
                     alt={`${alt} view ${i + 1}`}
                     loading="lazy"
                     decoding="async"
-                    className="absolute inset-0 size-full object-contain p-2"
+                    className="absolute inset-0 size-full object-contain "
                   />
                 </button>
               </li>
@@ -95,7 +95,7 @@ export default function ProductGallery({ images, alt }: Props) {
               loading="eager"
               decoding="sync"
               fetchPriority="high"
-              className="absolute inset-0 size-full cursor-zoom-in object-contain p-10 lg:p-14"
+              className="absolute inset-0 size-full cursor-zoom-in object-contain"
               style={{ animation: "perry-pg-fade 280ms ease-out" }}
             />
             <span className="absolute right-4 top-4 inline-flex items-center bg-white/90 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.2em] text-zinc-900 backdrop-blur">
@@ -210,7 +210,7 @@ function MobileCarousel({
                   decoding={i === 0 ? "sync" : "async"}
                   fetchPriority={i === 0 ? "high" : "auto"}
                   draggable={false}
-                  className="absolute inset-0 size-full cursor-zoom-in object-contain p-6"
+                  className="absolute inset-0 size-full cursor-zoom-in object-contain"
                 />
               </button>
             </div>
@@ -520,7 +520,7 @@ function Lightbox({
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        <div className="absolute inset-0 grid place-items-center px-4 md:px-16">
+        <div className="absolute inset-0 flex items-center justify-center px-4 py-4 md:px-16 md:py-6">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             key={index}
@@ -528,8 +528,12 @@ function Lightbox({
             alt={`${alt} view ${index + 1}`}
             draggable={false}
             onClick={onImageClick}
-            className="max-h-full max-w-full object-contain will-change-transform"
+            className="block object-contain will-change-transform"
             style={{
+              maxHeight: "100%",
+              maxWidth: "100%",
+              width: "auto",
+              height: "auto",
               transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
               transition: dragRef.current
                 ? "none"

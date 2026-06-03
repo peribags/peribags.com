@@ -9,7 +9,7 @@ const EMAILS = ["peribags01@gmail.com", "peribags26@gmail.com"] as const;
 const WHATSAPP_NUMBER = "919224588670";
 
 export const siteConfig = {
-  name: "Perry Bags",
+  name: "peribags",
   description: "Premium bags, crafted to last.",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   // Public PDF catalogue. Drop the file at public/catalogue.pdf and it works.
@@ -52,7 +52,7 @@ export const siteConfig = {
   maintenance: {
     enabled: process.env.NODE_ENV === 'production' ? true : false,
     heading: "We're sprucing the place up.",
-    body: "Perry Bags will be back online shortly. For urgent enquiries, reach out via email, phone, or WhatsApp.",
+    body: "peribags will be back online shortly. For urgent enquiries, reach out via email, phone, or WhatsApp.",
     eta: "Back online soon",
   },
 } as const;

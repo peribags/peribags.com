@@ -20,7 +20,7 @@ export default async function AdminLoginPage({
             href="/"
             className="text-foreground text-lg font-semibold tracking-tight"
           >
-            Perry Bags
+            peribags
           </Link>
           <h1 className="mt-8 text-2xl font-semibold tracking-tight">
             Sign in to Admin
@@ -39,7 +39,7 @@ export default async function AdminLoginPage({
         <LoginForm from={from} />
 
         <p className="text-muted-foreground mt-10 text-center text-xs">
-          &copy; {new Date().getFullYear()} Perry Bags
+          &copy; {new Date().getFullYear()} peribags
         </p>
       </div>
     </main>
