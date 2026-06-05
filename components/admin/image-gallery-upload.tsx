@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Star, X } from "lucide-react";
+import { useState } from "react";
+import { ChevronLeft, ChevronRight, ImagePlus, Star, X } from "lucide-react";
+import { MediaPicker } from "@/components/admin/media-picker";
 import { cn } from "@/lib/utils";
 
 function publicUrl(key: string): string {
@@ -20,6 +21,10 @@ type Props = {
   className?: string;
 };
 
+/**
+ * Multi-image gallery field. The add tile opens the media library, which
+ * covers both picking existing files and uploading new ones.
+ */
 export function ImageGalleryUpload({
   name,
   defaultValue = [],
@@ -27,40 +32,11 @@ export function ImageGalleryUpload({
   className,
 }: Props) {
   const [keys, setKeys] = useState<string[]>(defaultValue);
-  const [uploading, setUploading] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
-  async function handleFiles(files: FileList) {
-    if (files.length === 0) return;
-    setError(null);
-    setUploading((c) => c + files.length);
-
-    const uploads = Array.from(files).map(async (file) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", folder);
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error ?? "Upload failed");
-      return body.key as string;
-    });
-
-    const settled = await Promise.allSettled(uploads);
-    const newKeys: string[] = [];
-    for (const r of settled) {
-      if (r.status === "fulfilled") newKeys.push(r.value);
-      else setError(r.reason?.message ?? "Upload failed");
-      setUploading((c) => c - 1);
-    }
-    if (newKeys.length > 0) {
-      setKeys((prev) => [...prev, ...newKeys]);
-    }
-    if (inputRef.current) inputRef.current.value = "";
-  }
+  const addFromLibrary = (picked: string[]) => {
+    setKeys((prev) => [...prev, ...picked.filter((k) => !prev.includes(k))]);
+  };
 
   const move = (idx: number, dir: -1 | 1) => {
     const next = [...keys];
@@ -91,10 +67,17 @@ export function ImageGalleryUpload({
       ))}
 
       {keys.length === 0 ? (
-        <UploadDropzone
-          uploading={uploading > 0}
-          onPick={() => inputRef.current?.click()}
-        />
+        <button
+          type="button"
+          onClick={() => setLibraryOpen(true)}
+          className="border-input bg-background hover:bg-accent text-muted-foreground flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-xs transition-colors"
+        >
+          <ImagePlus className="size-5" />
+          Add images
+          <span className="text-muted-foreground/70 text-[10px]">
+            Pick from the library or upload new. Multiple supported.
+          </span>
+        </button>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {keys.map((key, idx) => (
@@ -110,74 +93,26 @@ export function ImageGalleryUpload({
               onRemove={() => remove(idx)}
             />
           ))}
-          <AddTile
-            uploading={uploading > 0}
-            onClick={() => inputRef.current?.click()}
-          />
+          <button
+            type="button"
+            onClick={() => setLibraryOpen(true)}
+            className="border-input bg-background hover:bg-accent text-muted-foreground flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed text-[10px] transition-colors"
+          >
+            <ImagePlus className="size-4" />
+            Add
+          </button>
         </div>
       )}
 
-      <input
-        ref={inputRef}
-        type="file"
+      <MediaPicker
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onPick={addFromLibrary}
         multiple
-        accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-        className="sr-only"
-        onChange={(e) => {
-          if (e.target.files) handleFiles(e.target.files);
-        }}
+        type="image"
+        folder={folder}
       />
-
-      {uploading > 0 && (
-        <p className="text-muted-foreground text-xs">
-          Uploading {uploading} {uploading === 1 ? "image" : "images"}…
-        </p>
-      )}
-      {error && <p className="text-destructive text-xs">{error}</p>}
     </div>
-  );
-}
-
-function UploadDropzone({
-  uploading,
-  onPick,
-}: {
-  uploading: boolean;
-  onPick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onPick}
-      disabled={uploading}
-      className="border-input bg-background hover:bg-accent text-muted-foreground flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed text-xs transition-colors disabled:opacity-60"
-    >
-      <Plus className="size-5" />
-      {uploading ? "Uploading…" : "Add images"}
-      <span className="text-muted-foreground/70 text-[10px]">
-        Drag or click. Multiple supported.
-      </span>
-    </button>
-  );
-}
-
-function AddTile({
-  uploading,
-  onClick,
-}: {
-  uploading: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={uploading}
-      className="border-input bg-background hover:bg-accent text-muted-foreground flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed text-[10px] transition-colors disabled:opacity-60"
-    >
-      <Plus className="size-4" />
-      {uploading ? "…" : "Add"}
-    </button>
   );
 }
 

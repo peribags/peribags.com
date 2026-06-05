@@ -1,6 +1,8 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createAnonClient } from "@/lib/supabase/anon";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
 
@@ -34,9 +36,13 @@ export type PublishedReels = {
   reels: ResolvedReel[];
 };
 
-/** Published reels + section heading config, for the storefront. */
-export async function getPublishedReels(): Promise<PublishedReels> {
-  const supabase = await createClient();
+/**
+ * Published reels + section heading config, for the storefront.
+ * Cached indefinitely under the `home-reels` tag.
+ */
+export const getPublishedReels = unstable_cache(
+  async (): Promise<PublishedReels> => {
+    const supabase = createAnonClient();
 
   const [itemsRes, configRes] = await Promise.all([
     supabase
@@ -79,4 +85,7 @@ export async function getPublishedReels(): Promise<PublishedReels> {
     description: configRes.data?.description ?? undefined,
     reels,
   };
-}
+  },
+  ["storefront-home-reels"],
+  { tags: [CACHE_TAGS.reels] },
+);

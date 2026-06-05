@@ -1,6 +1,8 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createAnonClient } from "@/lib/supabase/anon";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { buildTree } from "@/lib/services/admin/categories.service";
 import { ServiceError } from "@/lib/services/shared/errors";
 import type { Category, CategoryNode } from "@/types";
@@ -41,16 +43,23 @@ function fromRow(r: Row): Category {
  * Public-facing tree of published categories. Runs as the anon role under
  * the `categories_public_read` RLS policy, so we explicitly filter to
  * `published = true` rather than relying on a join-side filter.
+ *
+ * Cached indefinitely under the `categories` tag — admin category mutations
+ * call `revalidateTag` to refresh it.
  */
-export async function listPublishedCategoryTree(): Promise<CategoryNode[]> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .eq("published", true)
-    .order("sort_order")
-    .order("name");
+export const listPublishedCategoryTree = unstable_cache(
+  async (): Promise<CategoryNode[]> => {
+    const supabase = createAnonClient();
+    const { data, error } = await supabase
+      .from("categories")
+      .select("*")
+      .eq("published", true)
+      .order("sort_order")
+      .order("name");
 
-  if (error) throw new ServiceError(error.message, "DB_ERROR", error);
-  return buildTree((data ?? []).map((r) => fromRow(r as unknown as Row)));
-}
+    if (error) throw new ServiceError(error.message, "DB_ERROR", error);
+    return buildTree((data ?? []).map((r) => fromRow(r as unknown as Row)));
+  },
+  ["storefront-category-tree"],
+  { tags: [CACHE_TAGS.categories] },
+);

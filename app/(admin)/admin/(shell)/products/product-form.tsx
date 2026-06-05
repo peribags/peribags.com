@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageGalleryUpload } from "@/components/admin/image-gallery-upload";
 import { RichEditor } from "@/components/admin/rich-editor";
 import { SpecsEditor } from "@/components/admin/specs-editor";
+import { VariantsEditor } from "@/components/admin/variants-editor";
 import { cn, slugify } from "@/lib/utils";
 import {
   createProductAction,
@@ -187,6 +188,17 @@ export function ProductForm(props: Props) {
               name="images"
               defaultValue={p?.images ?? []}
               folder="products"
+            />
+          </Section>
+
+          <Section
+            kicker="Options"
+            title="Variants"
+            description="Define options like Color (Red, Black) and Size (S, M) — every combination (Red / S, Red / M, …) is generated automatically with its own SKU, price, stock and images. Add a swatch image to a value to show it as an image button on the storefront."
+          >
+            <VariantsEditor
+              defaultOptions={p?.options ?? []}
+              defaultVariants={p?.variants ?? []}
             />
           </Section>
 

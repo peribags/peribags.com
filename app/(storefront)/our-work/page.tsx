@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { RevealImage } from "@/components/storefront/Home/RevealImage";
 import { WhatsAppIcon } from "@/components/storefront/social-links";
 import { siteConfig, whatsappHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -12,7 +11,11 @@ export const metadata: Metadata = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Content — edit freely. Images can be local (/public) or remote URLs.
+// Content — edit freely.
+// Each work card has three fields: a client/brand logo, a picture of the
+// product, and a short description. Drop logo files in /public/logos and set
+// `logo` to the path (e.g. "/logos/acme.png"). While `logo` is null, a clean
+// typographic wordmark of `name` renders instead.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STATS = [
@@ -33,76 +36,66 @@ const MARQUEE_WORDS = [
 
 type Work = {
   id: string;
-  no: string;
-  title: string;
-  category: string;
-  year: string;
-  blurb: string;
+  /** Client / brand name — used as the wordmark when no logo is set. */
+  name: string;
+  /** Path or URL to the brand logo. Null renders a typographic wordmark. */
+  logo: string | null;
+  /** Picture of the product. */
   image: string;
+  /** A short description. */
+  description: string;
 };
 
 const WORKS: Work[] = [
   {
     id: "heritage-collection",
-    no: "01",
-    title: "The Heritage Collection",
-    category: "Collection",
-    year: "2026",
-    blurb:
-      "Twelve silhouettes cut from a single batch of full-grain hides — totes, slings and satchels that share one character.",
+    name: "Peri Heritage",
+    logo: null,
     image: "/hero.webp",
+    description:
+      "Twelve silhouettes cut from a single batch of full-grain hides — one shared character.",
   },
   {
     id: "everyday-totes",
-    no: "02",
-    title: "Everyday Totes",
-    category: "Product line",
-    year: "2025",
-    blurb:
-      "A tote engineered for the daily commute — laptop-first construction with hand-painted edges.",
+    name: "Daily Co.",
+    logo: null,
     image: "/hero1.webp",
+    description:
+      "A commuter tote with laptop-first construction and hand-painted edges.",
   },
   {
     id: "city-slings",
-    no: "03",
-    title: "City Slings",
-    category: "Product line",
-    year: "2025",
-    blurb:
-      "Compact, hands-free silhouettes that took eleven prototypes to feel effortless.",
+    name: "Urban Stride",
+    logo: null,
     image: "/sling.jpg",
+    description:
+      "Compact, hands-free slings that took eleven prototypes to feel effortless.",
   },
   {
-    id: "the-workshop",
-    no: "04",
-    title: "Inside the Workshop",
-    category: "Craft",
-    year: "Ongoing",
-    blurb:
-      "Every Peri bag passes through the same Mumbai workshop — cut, stitched, edged and checked by a small team of artisans who sign off each piece by hand. No assembly lines, no shortcuts. The slow way is the whole point.",
-    image: "/19331.jpg",
-  },
-  {
-    id: "wedding-trousseau",
-    no: "05",
-    title: "Trousseau Series",
-    category: "Special order",
-    year: "2024",
-    blurb:
-      "Saree covers and jewellery cases, monogrammed for wedding houses across three cities.",
+    id: "trousseau-series",
+    name: "Vivaah House",
+    logo: null,
     image:
       "https://images.unsplash.com/photo-1566150902887-9679ecc155ba?w=1200&auto=format&fit=crop&q=75",
+    description:
+      "Monogrammed saree covers and jewellery cases for wedding houses across three cities.",
   },
   {
     id: "retail-program",
-    no: "06",
-    title: "Retail Partner Program",
-    category: "Wholesale",
-    year: "2024",
-    blurb:
-      "Catalogue lines produced in small batches for boutiques — consistent grain, consistent colour, every run.",
+    name: "Boutique Lane",
+    logo: null,
     image:
       "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1200&auto=format&fit=crop&q=75",
+    description:
+      "Small-batch catalogue lines for boutiques — consistent grain and colour, every run.",
+  },
+  {
+    id: "workshop-edition",
+    name: "Atelier Peri",
+    logo: null,
+    image: "/19331.jpg",
+    description:
+      "Bench-made one-offs from the Mumbai workshop, signed by the hands that built them.",
   },
 ];
 
@@ -224,39 +217,23 @@ export default function OurWorkPage() {
       {/* ── Craft marquee ────────────────────────────────────────────────── */}
       <Marquee />
 
-      {/* ── Gallery ──────────────────────────────────────────────────────── */}
+      {/* ── Work cards — logo · product picture · short description ─────── */}
       <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
-        {/* 01 — full-bleed feature */}
-        <WorkFeature work={WORKS[0]} />
-
-        {/* 02 + 03 — asymmetric pair, second one offset down */}
-        <div className="mt-16 grid gap-x-8 gap-y-16 md:grid-cols-2 lg:mt-24 lg:gap-x-12">
-          <WorkCard work={WORKS[1]} aspect="aspect-[4/5]" slideFrom="left" />
-          <WorkCard
-            work={WORKS[2]}
-            aspect="aspect-[3/4]"
-            slideFrom="right"
-            className="md:mt-24"
-          />
-        </div>
-
-        {/* 04 — split editorial row, sticky text */}
-        <WorkSplit work={WORKS[3]} />
-
-        {/* 05 + 06 — pair again, first offset */}
-        <div className="mt-16 grid gap-x-8 gap-y-16 md:grid-cols-2 lg:mt-24 lg:gap-x-12">
-          <WorkCard
-            work={WORKS[4]}
-            aspect="aspect-[3/4]"
-            slideFrom="left"
-            className="md:mt-24"
-          />
-          <WorkCard work={WORKS[5]} aspect="aspect-[4/5]" slideFrom="right" />
+        <div className="grid gap-x-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
+          {WORKS.map((work, i) => (
+            <WorkCard
+              key={work.id}
+              work={work}
+              delay={(i % 3) * 100}
+              // Middle column drops a step for an editorial rhythm.
+              className={cn(i % 3 === 1 && "")}
+            />
+          ))}
         </div>
       </div>
 
       {/* ── The making — dark chapter ────────────────────────────────────── */}
-      {/* <div className="bg-zinc-950 text-white">
+      <div className="bg-zinc-950 text-white">
         <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[6vw]">
           <div className="max-w-2xl" data-aos="fade-up">
             <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-white/50">
@@ -264,7 +241,7 @@ export default function OurWorkPage() {
             </p>
             <h2 className="mt-3 text-3xl font-normal leading-[1.08] tracking-tight lg:text-5xl">
               Four steps.{" "}
-              <em className="font-serif italic text-white/60">No shortcuts.</em>
+              <span className="font-serif text-white/60">No shortcuts.</span>
             </h2>
           </div>
 
@@ -293,7 +270,7 @@ export default function OurWorkPage() {
             ))}
           </ol>
         </div>
-      </div> */}
+      </div>
 
       {/* ── Closing CTA ──────────────────────────────────────────────────── */}
       <div className="mx-auto max-w-[1600px] px-4 py-20 text-center md:px-6 md:py-28 lg:px-[4vw]">
@@ -304,14 +281,12 @@ export default function OurWorkPage() {
           Your turn
         </p>
         <h2
-          className="mx-auto mt-4 max-w-3xl text-[clamp(2rem,6vw,4.5rem)] font-normal leading-[1.05] tracking-tight text-zinc-950"
+          className="mx-auto  mt-4 max-w-3xl text-[clamp(2rem,6vw,4.5rem)] font-normal leading-[1.05] tracking-tight text-zinc-950"
           data-aos="fade-up"
           data-aos-delay="80"
         >
           Have something in mind?{" "}
-          <em className="font-serif italic text-zinc-500">
-            Let&rsquo;s make it.
-          </em>
+          <span className="font-serif text-zinc-500">Let&rsquo;s make it.</span>
         </h2>
         <div
           className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
@@ -374,156 +349,64 @@ function Marquee() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Work blocks
+// Work card — logo plate floating over the product picture, description below.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function WorkMeta({ work, light }: { work: Work; light?: boolean }) {
-  return (
-    <p
-      className={cn(
-        "text-[11px] font-medium uppercase tracking-[0.22em]",
-        light ? "text-white/70" : "text-zinc-500",
-      )}
-    >
-      {work.category} · {work.year}
-    </p>
-  );
-}
-
-/** Ghost outline numeral. */
-function GhostNo({ no, className }: { no: string; className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn(
-        "pointer-events-none select-none text-[clamp(4rem,9vw,8rem)] font-medium leading-none tracking-tight text-transparent transition-colors duration-700",
-        className,
-      )}
-      style={{ WebkitTextStroke: "1px #d4d4d8" }}
-    >
-      {no}
-    </span>
-  );
-}
-
-/** 01 — full-width feature with caption overlay. */
-function WorkFeature({ work }: { work: Work }) {
-  return (
-    <article className="group/feat relative" data-aos="fade-up">
-      <div className="relative overflow-hidden bg-zinc-100">
-        <div className="aspect-[16/10] sm:aspect-[16/8] lg:aspect-[16/7]">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={work.image}
-            alt={work.title}
-            className="size-full object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/feat:scale-[1.04]"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-
-        {/* Caption */}
-        <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8 lg:p-10">
-          <div className="max-w-xl">
-            <WorkMeta work={work} light />
-            <h2 className="mt-2 text-2xl font-medium tracking-tight text-white sm:text-3xl lg:text-4xl">
-              {work.title}
-            </h2>
-            <p className="mt-2 hidden text-sm leading-relaxed text-white/75 sm:block">
-              {work.blurb}
-            </p>
-          </div>
-          <span
-            aria-hidden
-            className="hidden text-[clamp(4rem,8vw,7rem)] font-medium leading-none text-transparent sm:block"
-            style={{ WebkitTextStroke: "1px rgba(255,255,255,0.4)" }}
-          >
-            {work.no}
-          </span>
-        </div>
-      </div>
-    </article>
-  );
-}
-
-/** Standard gallery card — curtain reveal + ghost numeral. */
 function WorkCard({
   work,
-  aspect,
-  slideFrom,
+  delay,
   className,
 }: {
   work: Work;
-  aspect: string;
-  slideFrom: "left" | "right";
+  delay: number;
   className?: string;
 }) {
   return (
-    <article className={cn("group/card", className)} data-aos="fade-up">
+    <article
+      className={cn("group/card", className)}
+      data-aos="fade-up"
+      data-aos-delay={delay}
+    >
+      {/* Product picture */}
       <div className="relative">
-        <RevealImage
-          src={work.image}
-          alt={work.title}
-          aspect={aspect}
-          slideFrom={slideFrom}
-        />
-        <GhostNo
-          no={work.no}
-          className="absolute -top-7 right-3 z-10 group-hover/card:text-zinc-950/5 lg:-top-10"
-        />
-      </div>
-
-      <div className="mt-5 flex items-start justify-between gap-4">
-        <div>
-          <WorkMeta work={work} />
-          <h2 className="mt-1.5 text-xl font-medium tracking-tight text-zinc-950 lg:text-2xl">
-            <span className="relative inline-block after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-left after:scale-x-0 after:bg-zinc-950 after:transition-transform after:duration-500 after:ease-out after:content-[''] group-hover/card:after:scale-x-100">
-              {work.title}
-            </span>
-          </h2>
-          {/* <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-600">
-            {work.blurb}
-          </p> */}
+        <div className="overflow-hidden bg-zinc-100">
+          <div className="aspect-[4/5]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={work.image}
+              alt={work.name}
+              loading="lazy"
+              decoding="async"
+              className="size-full object-cover transition-transform duration-[1100ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/card:scale-[1.05]"
+            />
+          </div>
         </div>
-        {/* <ArrowUpRight className="mt-1 size-5 shrink-0 text-zinc-300 transition-all duration-300 group-hover/card:-translate-y-0.5 group-hover/card:translate-x-0.5 group-hover/card:text-zinc-950" /> */}
-      </div>
-    </article>
-  );
-}
 
-/** 04 — split editorial row: sticky text beside a tall reveal image. */
-function WorkSplit({ work }: { work: Work }) {
-  return (
-    <article className="mt-16 grid gap-10 lg:mt-28 lg:grid-cols-12 lg:gap-12">
-      <div className="lg:col-span-5">
-        <div className="lg:sticky lg:top-32" data-aos="fade-up">
-          <GhostNo no={work.no} className="block" />
-          <WorkMeta work={work} />
-          <h2 className="mt-3 text-3xl font-normal leading-[1.08] tracking-tight text-zinc-950 lg:text-5xl">
-            {work.title.split(" ").slice(0, -1).join(" ")}{" "}
-            <em className="font-serif italic text-zinc-500">
-              {work.title.split(" ").slice(-1)}
-            </em>
-          </h2>
-          <p className="mt-5 max-w-md text-sm leading-relaxed text-zinc-600 sm:text-base">
-            {work.blurb}
-          </p>
-          <Link
-            href="/about"
-            className="group/link mt-8 inline-flex items-center gap-1.5 border-b border-zinc-900 pb-0.5 text-sm font-medium tracking-tight text-zinc-950"
-          >
-            Read our story
-            <ArrowUpRight className="size-3.5 transition-transform duration-200 group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5" />
-          </Link>
+        {/* Logo plate — floats over the picture's bottom edge */}
+        <div className="absolute -bottom-6 left-4 z-10 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/card:-translate-y-1.5">
+          <span className="flex h-12 min-w-24 items-center justify-center bg-white px-5 shadow-[0_16px_32px_-16px_rgba(15,15,15,0.3)]">
+            {work.logo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={work.logo}
+                alt={`${work.name} logo`}
+                className="max-h-6 w-auto max-w-32 object-contain"
+              />
+            ) : (
+              <span className="font-serif text-sm tracking-[0.14em] text-zinc-950 uppercase">
+                {work.name}
+              </span>
+            )}
+          </span>
         </div>
       </div>
 
-      <div className="lg:col-span-7" data-aos="fade-up" data-aos-delay="100">
-        <RevealImage
-          src={work.image}
-          alt={work.title}
-          aspect="aspect-[4/5] lg:aspect-[5/6]"
-          slideFrom="right"
-        />
+      {/* Short description */}
+      <div className="mt-10 flex items-start justify-between gap-4">
+        <p className="max-w-sm text-sm leading-relaxed text-zinc-600">
+          {work.description}
+        </p>
+        {/* <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-zinc-300 transition-all duration-300 group-hover/card:-translate-y-0.5 group-hover/card:translate-x-0.5 group-hover/card:text-zinc-950" /> */}
       </div>
     </article>
   );

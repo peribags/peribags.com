@@ -3,6 +3,7 @@ import {
   Clapperboard,
   FolderTree,
   GalleryHorizontalEnd,
+  Images,
   LayoutDashboard,
   LayoutTemplate,
   MessageSquare,
@@ -50,6 +51,12 @@ export const adminNav: NavGroup[] = [
         label: "Enquiry",
         icon: MessageSquare,
         shortcut: "E",
+      },
+      {
+        href: "/admin/media",
+        label: "Media",
+        icon: Images,
+        shortcut: "M",
       },
       {
         href: "/admin/settings",

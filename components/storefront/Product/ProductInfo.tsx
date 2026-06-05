@@ -5,17 +5,31 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronRight, X } from "lucide-react";
 import type { ProductDetail } from "@/lib/services/storefront/product-detail.service";
+// Type-only import — erased at compile time, so no runtime cycle with ProductView.
+import type { VariantState } from "@/components/storefront/Product/ProductView";
 import { submitEnquiryAction } from "@/app/(storefront)/products/actions";
 import { COUNTRY_CODES } from "@/lib/country-codes";
 import { cn } from "@/lib/utils";
 
 type Props = {
   product: ProductDetail;
+  /** Variant option groups + selection — owned by ProductView so the gallery stays in sync. */
+  variantState?: VariantState;
 };
 
-export default function ProductInfo({ product }: Props) {
+function formatINR(paise: number) {
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  }).format(paise / 100);
+}
+
+export default function ProductInfo({ product, variantState }: Props) {
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
+
+  const hasVariants = (variantState?.options.length ?? 0) > 0;
 
   const onShare = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -64,6 +78,115 @@ export default function ProductInfo({ product }: Props) {
       >
         {product.name}
       </h1>
+
+      {/* Variant options — one selector row per option (Color, Size…). The
+          chosen values resolve to one generated combination, Shopify-style. */}
+      {hasVariants && variantState && (
+        <div className="mt-8 space-y-6">
+          {variantState.options.map((option) => {
+            const selectedName = variantState.selections[option.name];
+            return (
+              <div key={option.name}>
+                <h3 className="text-xs font-medium uppercase tracking-[0.22em] text-zinc-500">
+                  {option.name}
+                  {selectedName && (
+                    <span className="ml-2 normal-case tracking-normal text-zinc-900">
+                      {selectedName}
+                    </span>
+                  )}
+                </h3>
+                <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                  {option.values.map((v) => {
+                    const active = v.name === selectedName;
+                    const available = variantState.isValueAvailable(
+                      option.name,
+                      v.name,
+                    );
+                    // Image swatch when the admin set one; text pill otherwise.
+                    if (v.swatchUrl) {
+                      return (
+                        <button
+                          key={v.name}
+                          type="button"
+                          onClick={() =>
+                            variantState.select(option.name, v.name)
+                          }
+                          aria-pressed={active}
+                          aria-label={v.name}
+                          title={
+                            available ? v.name : `${v.name} — unavailable`
+                          }
+                          className={cn(
+                            "relative size-12 overflow-hidden rounded-full ring-2 ring-offset-2 transition-all duration-200",
+                            active
+                              ? "ring-zinc-950"
+                              : "ring-zinc-200 hover:ring-zinc-400",
+                            !available && "opacity-45",
+                          )}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={v.swatchUrl}
+                            alt={v.name}
+                            className="size-full object-cover"
+                          />
+                          {!available && (
+                            <span
+                              aria-hidden
+                              className="absolute inset-0 grid place-items-center"
+                            >
+                              <span className="h-px w-full rotate-45 bg-zinc-500" />
+                            </span>
+                          )}
+                        </button>
+                      );
+                    }
+                    return (
+                      <button
+                        key={v.name}
+                        type="button"
+                        onClick={() => variantState.select(option.name, v.name)}
+                        aria-pressed={active}
+                        title={available ? v.name : `${v.name} — unavailable`}
+                        className={cn(
+                          "rounded-full border px-4 py-2 text-sm tracking-tight transition-colors duration-200",
+                          active
+                            ? "border-zinc-950 bg-zinc-950 text-white"
+                            : "border-zinc-300 text-zinc-700 hover:border-zinc-900 hover:text-zinc-950",
+                          !available && !active && "text-zinc-400 line-through",
+                        )}
+                      >
+                        {v.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Effective price / availability for the current combination */}
+          <p className="text-sm text-zinc-600">
+            {variantState.pricePaise != null ? (
+              <span className="text-base font-medium tracking-tight text-zinc-950 tabular-nums">
+                {formatINR(variantState.pricePaise)}
+              </span>
+            ) : (
+              <span>Price on request</span>
+            )}
+            {!variantState.inStock && (
+              <span className="ml-3 text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">
+                Out of stock
+              </span>
+            )}
+            {variantState.selectedVariant?.sku && (
+              <span className="ml-3 font-mono text-[11px] text-zinc-400">
+                SKU {variantState.selectedVariant.sku}
+              </span>
+            )}
+          </p>
+        </div>
+      )}
 
       {/* Specifications — 2-col tiles */}
       {product.specs.length > 0 && (
@@ -131,6 +254,7 @@ export default function ProductInfo({ product }: Props) {
       {/* Enquiry dialog — stays mounted so open/close can transition */}
       <EnquiryDialog
         product={product}
+        variantName={variantState?.label ?? null}
         open={enquiryOpen}
         onClose={() => setEnquiryOpen(false)}
       />
@@ -146,10 +270,12 @@ const CLOSE_MS = 400;
 
 function EnquiryDialog({
   product,
+  variantName,
   open,
   onClose,
 }: {
   product: ProductDetail;
+  variantName: string | null;
   open: boolean;
   onClose: () => void;
 }) {
@@ -196,7 +322,9 @@ function EnquiryDialog({
 
     const res = await submitEnquiryAction({
       productId: product.id,
-      productName: product.name,
+      productName: variantName
+        ? `${product.name} — ${variantName}`
+        : product.name,
       name: String(fd.get("name") ?? ""),
       email: String(fd.get("email") ?? ""),
       countryCode: String(fd.get("countryCode") ?? "+91"),
@@ -263,6 +391,9 @@ function EnquiryDialog({
                   </p>
                   <h2 className="mt-2 text-xl font-medium tracking-tight text-zinc-950 sm:text-2xl">
                     {product.name}
+                    {variantName && (
+                      <span className="text-zinc-500"> — {variantName}</span>
+                    )}
                   </h2>
                 </div>
                 <button
@@ -315,10 +446,12 @@ function EnquiryDialog({
                   </label>
                 </div>
                 <Field
+                  // Re-key on variant so the prefilled text follows the selection.
+                  key={variantName ?? "default"}
                   label="Message"
                   name="message"
                   textarea
-                  defaultValue={`Hi — I'd like to enquire about the ${product.name}.`}
+                  defaultValue={`Hi — I'd like to enquire about the ${product.name}${variantName ? ` (${variantName})` : ""}.`}
                   required
                 />
 

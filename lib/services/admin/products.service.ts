@@ -11,9 +11,26 @@ import {
 import type {
   Product,
   ProductCreateInput,
+  ProductOption,
   ProductSpec,
   ProductUpdateInput,
+  ProductVariant,
+  ProductVariantInput,
 } from "@/types";
+
+type VariantRow = {
+  id: string;
+  product_id: string;
+  option_values: string[] | null;
+  title: string;
+  sku: string | null;
+  price_paise: number | null;
+  images: string[] | null;
+  in_stock: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+};
 
 type ProductRow = {
   id: string;
@@ -24,6 +41,7 @@ type ProductRow = {
   price_paise: number | null;
   images: string[];
   specs: unknown;
+  options: unknown;
   meta_title: string | null;
   meta_description: string | null;
   in_stock: boolean;
@@ -33,10 +51,72 @@ type ProductRow = {
   created_at: string;
   updated_at: string;
   product_categories?: { category_id: string }[] | null;
+  product_variants?: VariantRow[] | null;
 };
 
 const SELECT_WITH_CATEGORIES =
-  "*, product_categories ( category_id )";
+  "*, product_categories ( category_id ), product_variants ( * )";
+
+/** Display title for a combination, e.g. "Red / S". */
+export function variantTitle(optionValues: string[]): string {
+  return optionValues.filter(Boolean).join(" / ");
+}
+
+/** Normalise the `products.options` jsonb into typed option groups. */
+export function normalizeOptions(raw: unknown): ProductOption[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ProductOption[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const obj = item as Record<string, unknown>;
+    const name = typeof obj.name === "string" ? obj.name.trim() : "";
+    if (!name) continue;
+    const values: ProductOption["values"] = [];
+    if (Array.isArray(obj.values)) {
+      for (const v of obj.values) {
+        if (!v || typeof v !== "object") continue;
+        const vo = v as Record<string, unknown>;
+        const vName = typeof vo.name === "string" ? vo.name.trim() : "";
+        if (!vName) continue;
+        values.push({
+          name: vName,
+          swatchImage:
+            typeof vo.swatch_image === "string" && vo.swatch_image.trim()
+              ? vo.swatch_image.trim()
+              : null,
+        });
+      }
+    }
+    if (values.length > 0) out.push({ name, values });
+  }
+  return out;
+}
+
+function optionsToJson(options: ProductOption[]) {
+  return options.map((o) => ({
+    name: o.name,
+    values: o.values.map((v) => ({
+      name: v.name,
+      swatch_image: v.swatchImage ?? null,
+    })),
+  }));
+}
+
+function variantFromRow(row: VariantRow): ProductVariant {
+  return {
+    id: row.id,
+    productId: row.product_id,
+    optionValues: row.option_values ?? [],
+    title: row.title,
+    sku: row.sku,
+    pricePaise: row.price_paise,
+    images: row.images ?? [],
+    inStock: row.in_stock,
+    sortOrder: row.sort_order,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
 
 function normalizeSpecs(raw: unknown): ProductSpec[] {
   if (!Array.isArray(raw)) return [];
@@ -71,6 +151,11 @@ function fromRow(row: ProductRow): Product {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     categoryIds: (row.product_categories ?? []).map((pc) => pc.category_id),
+    options: normalizeOptions(row.options),
+    variants: (row.product_variants ?? [])
+      .slice()
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map(variantFromRow),
   };
 }
 
@@ -91,6 +176,7 @@ function toRow(input: ProductCreateInput | ProductUpdateInput) {
   if (input.published !== undefined) row.published = input.published;
   if (input.featured !== undefined) row.featured = input.featured;
   if (input.sortOrder !== undefined) row.sort_order = input.sortOrder;
+  if (input.options !== undefined) row.options = optionsToJson(input.options);
   return row;
 }
 
@@ -163,6 +249,14 @@ export async function createProduct(
 
   if (input.categoryIds && input.categoryIds.length > 0) {
     await syncProductCategories(data.id, input.categoryIds);
+  }
+  if (input.variants && input.variants.length > 0) {
+    await syncProductVariants(data.id, input.variants);
+  }
+  if (
+    (input.categoryIds && input.categoryIds.length > 0) ||
+    (input.variants && input.variants.length > 0)
+  ) {
     return getProduct(data.id);
   }
 
@@ -193,6 +287,9 @@ export async function updateProduct(
 
   if (patch.categoryIds !== undefined) {
     await syncProductCategories(id, patch.categoryIds);
+  }
+  if (patch.variants !== undefined) {
+    await syncProductVariants(id, patch.variants);
   }
 
   return getProduct(id);
@@ -229,6 +326,45 @@ export async function uniqueProductSlug(
     candidate = `${base}-${n}`;
   }
   throw new ServiceError("Could not generate a unique slug", "CONFLICT");
+}
+
+/**
+ * Replace the product's variant list. Variants aren't referenced elsewhere,
+ * so a wholesale delete + ordered re-insert keeps this simple and atomic
+ * enough for an admin save.
+ */
+async function syncProductVariants(
+  productId: string,
+  variants: ProductVariantInput[],
+): Promise<void> {
+  const supabase = await createClient();
+
+  const { error: delErr } = await supabase
+    .from("product_variants")
+    .delete()
+    .eq("product_id", productId);
+  if (delErr) throw new ServiceError(delErr.message, "DB_ERROR", delErr);
+
+  const rows = variants
+    .map((v) => ({
+      ...v,
+      optionValues: v.optionValues.map((x) => x.trim()).filter(Boolean),
+    }))
+    .filter((v) => v.optionValues.length > 0)
+    .map((v, i) => ({
+      product_id: productId,
+      option_values: v.optionValues,
+      title: variantTitle(v.optionValues),
+      sku: v.sku ?? null,
+      price_paise: v.pricePaise ?? null,
+      images: v.images ?? [],
+      in_stock: v.inStock ?? true,
+      sort_order: i,
+    }));
+  if (rows.length === 0) return;
+
+  const { error } = await supabase.from("product_variants").insert(rows);
+  if (error) throw new ServiceError(error.message, "DB_ERROR", error);
 }
 
 /**

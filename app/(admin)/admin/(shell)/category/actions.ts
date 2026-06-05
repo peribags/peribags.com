@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createCategory,
   deleteCategory,
@@ -94,6 +95,9 @@ export async function createCategoryAction(
   }
 
   revalidatePath("/admin/category");
+  // Refreshes every cached storefront read that embeds categories — the
+  // header tree, category pages, home sections, product detail breadcrumbs.
+  updateTag(CACHE_TAGS.categories);
   redirect("/admin/category?created=1");
 }
 
@@ -143,6 +147,7 @@ export async function updateCategoryAction(
 
   revalidatePath("/admin/category");
   revalidatePath(`/admin/category/${id}`);
+  updateTag(CACHE_TAGS.categories);
   return { ok: true };
 }
 
@@ -151,5 +156,6 @@ export async function deleteCategoryAction(formData: FormData): Promise<void> {
   if (!id) return;
   await deleteCategory(id);
   revalidatePath("/admin/category");
+  updateTag(CACHE_TAGS.categories);
   redirect("/admin/category?deleted=1");
 }

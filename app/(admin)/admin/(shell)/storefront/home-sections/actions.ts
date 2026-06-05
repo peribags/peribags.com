@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createSection,
   deleteSection,
@@ -19,8 +20,9 @@ import type {
 export type SectionFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateSections() {
+  // Admin list re-renders via path; the cached storefront read refreshes via tag.
   revalidatePath("/admin/storefront/home-sections");
-  revalidatePath("/");
+  updateTag(CACHE_TAGS.sections);
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {

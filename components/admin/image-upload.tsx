@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Upload, X } from "lucide-react";
+import { useState } from "react";
+import { ImagePlus, X } from "lucide-react";
+import { MediaPicker } from "@/components/admin/media-picker";
 import { cn } from "@/lib/utils";
 
 function publicUrl(key: string): string {
@@ -12,6 +13,10 @@ function publicUrl(key: string): string {
   return `${base.replace(/\/$/, "")}/${key.replace(/^\//, "")}`;
 }
 
+/**
+ * Single-image field. The button opens the media library, which covers both
+ * picking an existing file and uploading a new one.
+ */
 export function ImageUpload({
   name,
   defaultValue = "",
@@ -24,34 +29,7 @@ export function ImageUpload({
   className?: string;
 }) {
   const [key, setKey] = useState(defaultValue);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  async function handleFile(file: File) {
-    setError(null);
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      if (folder) fd.append("folder", folder);
-
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(body?.error ?? "Upload failed");
-      }
-      setKey(body.key as string);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const preview = publicUrl(key);
 
@@ -63,11 +41,7 @@ export function ImageUpload({
         <div className="border-border bg-card relative size-32 overflow-hidden rounded-lg border">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={preview}
-              alt=""
-              className="size-full object-cover"
-            />
+            <img src={preview} alt="" className="size-full object-cover" />
           ) : (
             <div className="text-muted-foreground grid size-full place-items-center text-[10px]">
               {key}
@@ -85,27 +59,22 @@ export function ImageUpload({
       ) : (
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className="border-input bg-background hover:bg-accent text-muted-foreground flex size-32 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-xs transition-colors disabled:opacity-60"
+          onClick={() => setLibraryOpen(true)}
+          className="border-input bg-background hover:bg-accent text-muted-foreground flex size-32 flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-xs transition-colors"
         >
-          <Upload className="size-5" />
-          {uploading ? "Uploading…" : "Upload image"}
+          <ImagePlus className="size-5" />
+          Add image
         </button>
       )}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-        className="sr-only"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
+      <MediaPicker
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onPick={(keys) => keys[0] && setKey(keys[0])}
+        type="image"
+        folder={folder}
       />
 
-      {error && <p className="text-destructive text-xs">{error}</p>}
       {key && (
         <p className="text-muted-foreground max-w-[14rem] truncate font-mono text-[10px]">
           {key}

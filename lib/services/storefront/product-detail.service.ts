@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { Route } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createAnonClient } from "@/lib/supabase/anon";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
 
@@ -15,6 +17,33 @@ export type ProductDetailCategory = {
   id: string;
   slug: string;
   name: string;
+};
+
+export type ProductDetailOptionValue = {
+  name: string;
+  /** Resolved swatch image URL shown in the selector, when set. */
+  swatchUrl: string | null;
+};
+
+/** An option group (Color, Size, …) with its selectable values. */
+export type ProductDetailOption = {
+  name: string;
+  values: ProductDetailOptionValue[];
+};
+
+/** One combination of option values (Shopify-style), e.g. Red / S. */
+export type ProductDetailVariant = {
+  id: string;
+  /** Value names aligned with `options` order, e.g. ["Red","S"]. */
+  optionValues: string[];
+  /** Display title, e.g. "Red / S". */
+  title: string;
+  sku: string | null;
+  /** Null → inherits the product price. */
+  pricePaise: number | null;
+  /** Resolved image URLs. Empty → the product gallery is used. */
+  gallery: string[];
+  inStock: boolean;
 };
 
 /**
@@ -40,6 +69,10 @@ export type ProductDetail = {
   category: ProductDetailCategory | null;
   /** All published category ids the product is linked to (used by related). */
   categoryIds: string[];
+  /** Option group definitions (Color, Size, …). Empty = single option. */
+  options: ProductDetailOption[];
+  /** Generated combinations of the option values. */
+  variants: ProductDetailVariant[];
   metaTitle: string | null;
   metaDescription: string | null;
   createdAt: string;
@@ -60,18 +93,39 @@ export type RelatedProduct = {
 // Public API
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Fetch a published product by slug, joined to its categories. */
+/**
+ * Fetch a published product by slug, joined to its categories. Cached
+ * indefinitely per slug — tagged with `products`, `product:<slug>` and
+ * `categories` so admin mutations to either refresh it.
+ */
 export async function getProductBySlug(
   slug: string,
 ): Promise<ProductDetail | null> {
-  const supabase = await createClient();
+  return unstable_cache(
+    () => getProductBySlugUncached(slug),
+    ["storefront-product-detail", slug],
+    {
+      tags: [
+        CACHE_TAGS.products,
+        CACHE_TAGS.categories,
+        CACHE_TAGS.product(slug),
+      ],
+    },
+  )();
+}
+
+async function getProductBySlugUncached(
+  slug: string,
+): Promise<ProductDetail | null> {
+  const supabase = createAnonClient();
 
   const { data, error } = await supabase
     .from("products")
     .select(
       `id, slug, name, short_description, description, price_paise, images,
-       in_stock, specs, meta_title, meta_description, created_at, updated_at,
-       product_categories ( categories ( id, slug, name, published, sort_order ) )`,
+       in_stock, specs, options, meta_title, meta_description, created_at, updated_at,
+       product_categories ( categories ( id, slug, name, published, sort_order ) ),
+       product_variants ( id, option_values, title, sku, price_paise, images, in_stock, sort_order )`,
     )
     .eq("slug", slug)
     .eq("published", true)
@@ -95,6 +149,21 @@ export async function getProductBySlug(
     .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
     .map((c) => ({ id: c.id, slug: c.slug, name: c.name }));
 
+  const options = normalizeOptionsJson(row.options);
+
+  const variants: ProductDetailVariant[] = (row.product_variants ?? [])
+    .slice()
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((v) => ({
+      id: v.id,
+      optionValues: v.option_values ?? [],
+      title: v.title,
+      sku: v.sku,
+      pricePaise: v.price_paise,
+      gallery: (v.images ?? []).map((k) => r2PublicUrl(k)),
+      inStock: !!v.in_stock,
+    }));
+
   return {
     id: row.id,
     slug: row.slug,
@@ -109,6 +178,8 @@ export async function getProductBySlug(
     inStock: !!row.in_stock,
     category: linkedCategories[0] ?? null,
     categoryIds: linkedCategories.map((c) => c.id),
+    options,
+    variants,
     metaTitle: row.meta_title ?? null,
     metaDescription: row.meta_description ?? null,
     createdAt: row.created_at,
@@ -119,6 +190,7 @@ export async function getProductBySlug(
 /**
  * Find related products — published, in any of the same categories, not the
  * current product itself. Deduped + ordered by sort then recency.
+ * Cached indefinitely under the `products` tag.
  */
 export async function getRelatedProducts(
   currentProductId: string,
@@ -126,8 +198,19 @@ export async function getRelatedProducts(
   limit = 4,
 ): Promise<RelatedProduct[]> {
   if (categoryIds.length === 0 || limit <= 0) return [];
+  return unstable_cache(
+    () => getRelatedProductsUncached(currentProductId, categoryIds, limit),
+    ["storefront-related", currentProductId, String(limit), ...categoryIds],
+    { tags: [CACHE_TAGS.products] },
+  )();
+}
 
-  const supabase = await createClient();
+async function getRelatedProductsUncached(
+  currentProductId: string,
+  categoryIds: string[],
+  limit: number,
+): Promise<RelatedProduct[]> {
+  const supabase = createAnonClient();
 
   const { data, error } = await supabase
     .from("products")
@@ -177,6 +260,48 @@ type CategoryEmbed = {
   sort_order: number | null;
 };
 
+type VariantEmbed = {
+  id: string;
+  option_values: string[] | null;
+  title: string;
+  sku: string | null;
+  price_paise: number | null;
+  images: string[] | null;
+  in_stock: boolean;
+  sort_order: number;
+};
+
+/** Normalise the `products.options` jsonb, resolving swatch keys to URLs. */
+function normalizeOptionsJson(raw: unknown): ProductDetailOption[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ProductDetailOption[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const obj = item as Record<string, unknown>;
+    const name = typeof obj.name === "string" ? obj.name.trim() : "";
+    if (!name) continue;
+    const values: ProductDetailOptionValue[] = [];
+    if (Array.isArray(obj.values)) {
+      for (const v of obj.values) {
+        if (!v || typeof v !== "object") continue;
+        const vo = v as Record<string, unknown>;
+        const vName = typeof vo.name === "string" ? vo.name.trim() : "";
+        if (!vName) continue;
+        const swatch =
+          typeof vo.swatch_image === "string" && vo.swatch_image.trim()
+            ? vo.swatch_image.trim()
+            : null;
+        values.push({
+          name: vName,
+          swatchUrl: swatch ? r2PublicUrl(swatch) : null,
+        });
+      }
+    }
+    if (values.length > 0) out.push({ name, values });
+  }
+  return out;
+}
+
 type ProductRow = {
   id: string;
   slug: string;
@@ -187,11 +312,13 @@ type ProductRow = {
   images: string[] | null;
   in_stock: boolean;
   specs: unknown;
+  options: unknown;
   meta_title: string | null;
   meta_description: string | null;
   created_at: string;
   updated_at: string;
   product_categories: { categories: CategoryEmbed | null }[] | null;
+  product_variants: VariantEmbed[] | null;
 };
 
 type RelatedRow = {

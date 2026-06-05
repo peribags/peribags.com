@@ -1,7 +1,8 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createBannerSlide,
   deleteBannerSlide,
@@ -17,10 +18,10 @@ import type {
 
 export type BannerFormState = { error: string } | { ok: true } | undefined;
 
-const STOREFRONT_PATHS = ["/admin/storefront/home-banner", "/"];
-
 function revalidateBanner() {
-  for (const p of STOREFRONT_PATHS) revalidatePath(p);
+  // Admin list re-renders via path; the cached storefront read refreshes via tag.
+  revalidatePath("/admin/storefront/home-banner");
+  updateTag(CACHE_TAGS.banner);
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {

@@ -1,9 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { Film, ImageIcon, Upload, X } from "lucide-react";
+import { useState } from "react";
+import { Film, ImageIcon, ImagePlus, X } from "lucide-react";
+import { MediaPicker } from "@/components/admin/media-picker";
 import { cn } from "@/lib/utils";
 import type { BannerMediaType } from "@/types";
+
+const VIDEO_KEY_RE = /\.(mp4|webm|ogv|mov)$/i;
 
 function publicUrl(key: string): string {
   if (!key) return "";
@@ -13,12 +16,11 @@ function publicUrl(key: string): string {
   return `${base.replace(/\/$/, "")}/${key.replace(/^\//, "")}`;
 }
 
-const ACCEPT =
-  "image/jpeg,image/png,image/webp,image/avif,image/gif,video/mp4,video/webm,video/ogg,video/quicktime";
-
 /**
- * Single media (image OR video) uploader. Renders two hidden inputs so a
- * server action can read both the stored key and its type:
+ * Single media (image OR video) field. The button opens the media library,
+ * which covers both picking an existing file and uploading a new one.
+ * Renders two hidden inputs so a server action can read both the stored key
+ * and its type:
  *   `formData.get(name)`      → R2 key
  *   `formData.get(typeName)`  → "image" | "video"
  */
@@ -39,37 +41,14 @@ export function MediaUpload({
 }) {
   const [key, setKey] = useState(defaultValue);
   const [mediaType, setMediaType] = useState<BannerMediaType>(defaultType);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
-  async function handleFile(file: File) {
-    setError(null);
-    setUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", folder);
-
-      const res = await fetch("/api/admin/upload", {
-        method: "POST",
-        body: fd,
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error ?? "Upload failed");
-
-      setKey(body.key as string);
-      setMediaType(
-        (body.mediaType as BannerMediaType) ??
-          (file.type.startsWith("video/") ? "video" : "image"),
-      );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
-    }
-  }
+  const pickFromLibrary = (keys: string[]) => {
+    const picked = keys[0];
+    if (!picked) return;
+    setKey(picked);
+    setMediaType(VIDEO_KEY_RE.test(picked) ? "video" : "image");
+  };
 
   const preview = publicUrl(key);
 
@@ -122,30 +101,25 @@ export function MediaUpload({
       ) : (
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
-          disabled={uploading}
-          className="border-input bg-background hover:bg-accent text-muted-foreground flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-xs transition-colors disabled:opacity-60"
+          onClick={() => setLibraryOpen(true)}
+          className="border-input bg-background hover:bg-accent text-muted-foreground flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-dashed text-xs transition-colors"
         >
-          <Upload className="size-5" />
-          {uploading ? "Uploading…" : "Upload image or video"}
+          <ImagePlus className="size-5" />
+          Add image or video
           <span className="text-muted-foreground/70 text-[10px]">
-            JPG, PNG, WebP, GIF up to 8 MB · MP4, WebM up to 64 MB
+            Pick from the library or upload new
           </span>
         </button>
       )}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPT}
-        className="sr-only"
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
-        }}
+      <MediaPicker
+        open={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
+        onPick={pickFromLibrary}
+        type="all"
+        folder={folder}
       />
 
-      {error && <p className="text-destructive text-xs">{error}</p>}
       {key && (
         <p className="text-muted-foreground max-w-full truncate font-mono text-[10px]">
           {key}

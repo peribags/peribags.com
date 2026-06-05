@@ -36,6 +36,46 @@ export type ProductSpec = {
   value: string;
 };
 
+/** One selectable value inside an option group, e.g. Color → "Red". */
+export type ProductOptionValue = {
+  name: string;
+  /** Optional R2 key shown as an image swatch in the storefront selector. */
+  swatchImage: string | null;
+};
+
+/** An option group defined on the product, e.g. "Color" or "Size". */
+export type ProductOption = {
+  name: string;
+  values: ProductOptionValue[];
+};
+
+/** One COMBINATION of option values (Shopify-style), e.g. Red / S. */
+export type ProductVariant = {
+  id: string;
+  productId: string;
+  /** Value names aligned with the product's options order, e.g. ["Red","S"]. */
+  optionValues: string[];
+  /** Denormalised display title, e.g. "Red / S". */
+  title: string;
+  sku: string | null;
+  /** Null → inherits the product price. */
+  pricePaise: number | null;
+  /** R2 keys. Empty → storefront uses the product gallery. */
+  images: string[];
+  inStock: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProductVariantInput = {
+  optionValues: string[];
+  sku?: string | null;
+  pricePaise?: number | null;
+  images?: string[];
+  inStock?: boolean;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -54,6 +94,10 @@ export type Product = {
   createdAt: string;
   updatedAt: string;
   categoryIds: string[];
+  /** Option group definitions (Color, Size, …). */
+  options: ProductOption[];
+  /** Generated combinations of the option values. */
+  variants: ProductVariant[];
 };
 
 export type ProductCreateInput = {
@@ -71,6 +115,8 @@ export type ProductCreateInput = {
   featured?: boolean;
   sortOrder?: number;
   categoryIds?: string[];
+  options?: ProductOption[];
+  variants?: ProductVariantInput[];
 };
 
 export type ProductUpdateInput = Partial<ProductCreateInput>;

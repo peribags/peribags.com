@@ -2,9 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import ProductGallery from "@/components/storefront/Product/ProductGallery";
-import ProductInfo from "@/components/storefront/Product/ProductInfo";
-import ProductDetails from "@/components/storefront/Product/ProductDetails";
+import ProductView from "@/components/storefront/Product/ProductView";
 import RelatedProducts from "@/components/storefront/Product/RelatedProducts";
 import {
   getProductBySlug,
@@ -188,32 +186,9 @@ export default async function ProductDetailPage({
             </ol>
           </nav>
 
-          {/* Main two-column: gallery + (info + details) */}
-          <div className="mt-6 grid grid-cols-1 gap-x-10 gap-y-10 md:mt-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,520px)] lg:gap-x-14 xl:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
-            {/* Gallery — sticky on lg so it stays put while right column scrolls */}
-            <div className="min-w-0 lg:sticky lg:top-6 lg:self-start">
-              {product.gallery.length > 0 ? (
-                <ProductGallery
-                  images={product.gallery}
-                  alt={product.name}
-                />
-              ) : (
-                <div
-                  className="aspect-[4/5] w-full"
-                  style={{ backgroundColor: "#F5F1EA" }}
-                />
-              )}
-            </div>
-
-            {/* Right column: info + details accordion */}
-            <div className="min-w-0">
-              <ProductInfo product={product} />
-
-              <div className="mt-10">
-                <ProductDetails product={product} />
-              </div>
-            </div>
-          </div>
+          {/* Main two-column: gallery + (info + details). ProductView owns the
+              selected-variant state so both columns stay in sync. */}
+          <ProductView product={product} />
         </div>
       </section>
 

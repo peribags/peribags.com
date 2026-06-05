@@ -1,6 +1,8 @@
 import "server-only";
 
-import { createClient } from "@/lib/supabase/server";
+import { unstable_cache } from "next/cache";
+import { createAnonClient } from "@/lib/supabase/anon";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { ServiceError } from "@/lib/services/shared/errors";
 import type { BannerMediaType, HomeBannerSlide } from "@/types";
 
@@ -55,9 +57,13 @@ export type PublishedHomeBanner = {
 /**
  * Published banner slides + the configured banner height, for the storefront.
  * Runs as the anon role under the `*_public_read` RLS policies.
+ *
+ * Cached indefinitely under the `home-banner` tag — admin banner mutations
+ * call `revalidateTag` to refresh it.
  */
-export async function getPublishedHomeBanner(): Promise<PublishedHomeBanner> {
-  const supabase = await createClient();
+export const getPublishedHomeBanner = unstable_cache(
+  async (): Promise<PublishedHomeBanner> => {
+    const supabase = createAnonClient();
 
   const [slidesRes, configRes] = await Promise.all([
     supabase
@@ -85,4 +91,7 @@ export async function getPublishedHomeBanner(): Promise<PublishedHomeBanner> {
     heightDesktop: configRes.data?.height_desktop ?? null,
     heightMobile: configRes.data?.height_mobile ?? null,
   };
-}
+  },
+  ["storefront-home-banner"],
+  { tags: [CACHE_TAGS.banner] },
+);
