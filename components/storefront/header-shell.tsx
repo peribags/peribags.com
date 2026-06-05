@@ -3,7 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, ChevronDown, ChevronRight, Menu, Search, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronDown,
+  ChevronRight,
+  Menu,
+  Search,
+  X,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { CategoryTile } from "@/lib/category-tiles";
 import { formatPhone, mailHref, siteConfig, telHref } from "@/lib/site";
@@ -96,164 +103,184 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
   }, [mobileOpen]);
 
   // Transparent only on home page top. Any open panel forces white.
-  const transparent = isHome && atTop && !mobileOpen && !megaOpen && !searchOpen;
+  const transparent =
+    isHome && atTop && !mobileOpen && !megaOpen && !searchOpen;
 
   return (
     <>
       {/* Spacer — reserves layout space when the header is fixed + solid (non-home pages).
-          Home keeps the hero flush under the transparent header. */}
-      {!isHome && <div aria-hidden className="h-16 lg:h-20" />}
+          Home keeps the hero flush under the transparent header. Mobile is two
+          rows (bar + search), so it needs the taller spacer. */}
+      {!isHome && <div aria-hidden className="h-[7.25rem] lg:h-20" />}
 
       <header
-      style={{
-        transitionProperty: "transform, background-color, color",
-        transitionDuration: "500ms, 300ms, 300ms, 300ms",
-        transitionTimingFunction:
-          "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out, ease-out",
-        transform: hidden ? "translateY(-100%)" : "translateY(0)",
-        willChange: "transform",
-      }}
-      className={cn(
-        "fixed inset-x-0 top-0 z-40",
-        transparent
-          ? "bg-transparent text-white"
-          : "bg-white text-zinc-950",
-      )}
-    >
-      <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-3 items-center px-4 md:px-6 lg:h-20 lg:px-[4vw]">
-        {/* Logo — left */}
-        <Link
-          href="/"
-          className="justify-self-start text-lg font-semibold uppercase transition-opacity hover:opacity-70 lg:text-xl"
-        >
-          {siteConfig.name}
-        </Link>
+        style={{
+          transitionProperty: "transform, background-color, color",
+          transitionDuration: "500ms, 300ms, 300ms, 300ms",
+          transitionTimingFunction:
+            "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out, ease-out",
+          transform: hidden ? "translateY(-100%)" : "translateY(0)",
+          willChange: "transform",
+        }}
+        className={cn(
+          "fixed inset-x-0 top-0 z-40",
+          transparent ? "bg-transparent text-white" : "bg-white text-zinc-950",
+        )}
+      >
+        <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-3 items-center px-4 md:px-6 lg:h-20 lg:px-[4vw]">
+          {/* Logo — left */}
+          <Link
+            href="/"
+            className="justify-self-start text-lg font-semibold uppercase transition-opacity hover:opacity-70 lg:text-xl"
+          >
+            {siteConfig.name}
+          </Link>
 
-        {/* Nav — centered (desktop) */}
-        <nav className="hidden items-center justify-self-center gap-8 lg:flex">
-          {STATIC_LINKS.map((l) => {
-            const active = pathname === l.href;
-            const isShop = l.href === "/category";
-            const showUnderline = active || (isShop && megaOpen);
-            const linkEl = (
-              <Link
-                href={l.href}
-                aria-expanded={isShop ? megaOpen : undefined}
-                className={cn(
-                  "relative inline-flex items-center gap-1 text-sm font-medium tracking-tight transition-colors",
-                  "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:scale-x-0 after:transition-transform after:duration-300 after:ease-out after:content-['']",
-                  "hover:after:scale-x-100",
-                  transparent
-                    ? cn(
-                        "after:bg-white",
-                        showUnderline ? "text-white after:scale-x-100" : "text-white hover:text-white",
-                      )
-                    : cn(
-                        "after:bg-zinc-950",
-                        showUnderline ? "text-zinc-950 after:scale-x-100" : "text-zinc-600 hover:text-zinc-950",
-                      ),
-                )}
+          {/* Nav — centered (desktop) */}
+          <nav className="hidden items-center justify-self-center gap-8 lg:flex">
+            {STATIC_LINKS.map((l) => {
+              const active = pathname === l.href;
+              const isShop = l.href === "/category";
+              const showUnderline = active || (isShop && megaOpen);
+              const linkEl = (
+                <Link
+                  href={l.href}
+                  aria-expanded={isShop ? megaOpen : undefined}
+                  className={cn(
+                    "relative inline-flex items-center gap-1 text-sm font-medium tracking-tight transition-colors",
+                    "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:scale-x-0 after:transition-transform after:duration-300 after:ease-out after:content-['']",
+                    "hover:after:scale-x-100",
+                    transparent
+                      ? cn(
+                          "after:bg-white",
+                          showUnderline
+                            ? "text-white after:scale-x-100"
+                            : "text-white hover:text-white",
+                        )
+                      : cn(
+                          "after:bg-zinc-950",
+                          showUnderline
+                            ? "text-zinc-950 after:scale-x-100"
+                            : "text-zinc-600 hover:text-zinc-950",
+                        ),
+                  )}
+                >
+                  {l.label}
+                  {isShop && (
+                    <ChevronDown
+                      aria-hidden
+                      className={cn(
+                        "size-3.5 transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
+                        megaOpen ? "rotate-180" : "rotate-0",
+                        transparent ? "text-white/70" : "text-zinc-500",
+                      )}
+                    />
+                  )}
+                </Link>
+              );
+
+              return isShop ? (
+                <div
+                  key={l.href}
+                  onMouseEnter={openMega}
+                  onMouseLeave={() => scheduleCloseMega()}
+                  className="relative flex items-center"
+                >
+                  {linkEl}
+                </div>
+              ) : (
+                <div key={l.href}>{linkEl}</div>
+              );
+            })}
+          </nav>
+
+          {/* Right side — search pill (desktop) + hamburger (mobile).
+              col-start-3 keeps it in the right column even when the centered
+              nav is hidden (mobile), where it would otherwise slot into col 2. */}
+          <div className="col-start-3 flex items-center justify-self-end gap-2">
+            {/* Search pill — desktop */}
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              aria-label="Open search"
+              className={cn(
+                "hidden w-56 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors lg:inline-flex xl:w-72",
+                transparent
+                  ? "border-white/40 text-white/80 hover:border-white hover:text-white"
+                  : "border-zinc-300 text-zinc-500 hover:border-zinc-900 hover:text-zinc-700",
+              )}
+            >
+              <Search className="size-4 shrink-0" />
+              <span className="truncate">Search bags, categories…</span>
+            </button>
+
+            {/* Hamburger — mobile */}
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Open menu"
+                  className={cn(
+                    "grid size-10 place-items-center transition-colors lg:hidden",
+                    transparent
+                      ? "text-white hover:bg-white/10"
+                      : "text-zinc-900 hover:bg-zinc-100",
+                  )}
+                >
+                  <Menu className="size-5" />
+                </button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="w-full max-w-md bg-white p-0"
+                showCloseButton={false}
               >
-                {l.label}
-                {isShop && (
-                  <ChevronDown
-                    aria-hidden
-                    className={cn(
-                      "size-3.5 transition-all duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)]",
-                      megaOpen ? "rotate-180" : "rotate-0",
-                      transparent ? "text-white/70" : "text-zinc-500",
-                    )}
-                  />
-                )}
-              </Link>
-            );
+                <MobileDrawer
+                  pathname={pathname}
+                  tiles={tiles}
+                  onClose={() => setMobileOpen(false)}
+                />
+              </SheetContent>
+            </Sheet>
+          </div>
+        </div>
 
-            return isShop ? (
-              <div
-                key={l.href}
-                onMouseEnter={openMega}
-                onMouseLeave={() => scheduleCloseMega()}
-                className="relative flex items-center"
-              >
-                {linkEl}
-              </div>
-            ) : (
-              <div key={l.href}>{linkEl}</div>
-            );
-          })}
-        </nav>
-
-        {/* Right side — search pill (desktop) + hamburger (mobile) */}
-        <div className="flex items-center justify-self-end gap-2">
-          {/* Search pill — desktop */}
+        {/* Mobile search — second row, below the main bar */}
+        <div className="px-4 pb-3 md:px-6 lg:hidden">
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
             aria-label="Open search"
             className={cn(
-              "hidden w-56 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors lg:inline-flex xl:w-72",
+              "flex h-10 w-full items-center gap-3 rounded-full border px-4 text-left text-sm transition-colors",
               transparent
-                ? "border-white/40 text-white/80 hover:border-white hover:text-white"
-                : "border-zinc-300 text-zinc-500 hover:border-zinc-900 hover:text-zinc-700",
+                ? "border-white/40 bg-white/10 text-white/85 backdrop-blur-sm"
+                : "border-zinc-300 bg-zinc-50 text-zinc-500",
             )}
           >
             <Search className="size-4 shrink-0" />
             <span className="truncate">Search bags, categories…</span>
           </button>
-
-          {/* Hamburger — mobile */}
-          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-            <SheetTrigger asChild>
-              <button
-                type="button"
-                aria-label="Open menu"
-                className={cn(
-                  "grid size-10 place-items-center transition-colors lg:hidden",
-                  transparent ? "text-white hover:bg-white/10" : "text-zinc-900 hover:bg-zinc-100",
-                )}
-              >
-                <Menu className="size-5" />
-              </button>
-            </SheetTrigger>
-            <SheetContent
-              side="right"
-              className="w-full max-w-md bg-white p-0"
-              showCloseButton={false}
-            >
-              <MobileDrawer
-                pathname={pathname}
-                tiles={tiles}
-                onClose={() => setMobileOpen(false)}
-                onOpenSearch={() => {
-                  setMobileOpen(false);
-                  // Wait for the sheet to finish closing so the body-scroll
-                  // lock from the search modal takes over cleanly.
-                  setTimeout(() => setSearchOpen(true), 220);
-                }}
-              />
-            </SheetContent>
-          </Sheet>
         </div>
-      </div>
 
-      {/* ── Mega menu — full width, sits below the header bar ─────────── */}
-      <div
-        onMouseEnter={openMega}
-        onMouseLeave={() => scheduleCloseMega()}
-        aria-hidden={!megaOpen}
-        style={{
-          transitionProperty: "opacity, translate",
-          transitionDuration: "400ms",
-          transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
-          opacity: megaOpen ? 1 : 0,
-          translate: megaOpen ? "0 0" : "0 -0.75rem",
-          pointerEvents: megaOpen ? "auto" : "none",
-        }}
-        className="absolute inset-x-0 top-full hidden border-t border-zinc-200 bg-white lg:block"
-      >
-        <MegaPanel tiles={tiles} onItemClick={() => setMegaOpen(false)} />
-      </div>
-    </header>
+        {/* ── Mega menu — full width, sits below the header bar ─────────── */}
+        <div
+          onMouseEnter={openMega}
+          onMouseLeave={() => scheduleCloseMega()}
+          aria-hidden={!megaOpen}
+          style={{
+            transitionProperty: "opacity, translate",
+            transitionDuration: "400ms",
+            transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+            opacity: megaOpen ? 1 : 0,
+            translate: megaOpen ? "0 0" : "0 -0.75rem",
+            pointerEvents: megaOpen ? "auto" : "none",
+          }}
+          className="absolute inset-x-0 top-full hidden border-t border-zinc-200 bg-white lg:block"
+        >
+          <MegaPanel tiles={tiles} onItemClick={() => setMegaOpen(false)} />
+        </div>
+      </header>
 
       {/* Search modal — sits outside the header so it stays put when header slides */}
       <HeaderSearchModal
@@ -292,9 +319,9 @@ function MegaPanel({
           <h3 className="mt-3 text-3xl font-normal tracking-tight text-zinc-950">
             Every collection.
           </h3>
-          <p className="mt-3 max-w-sm text-sm text-zinc-600">
+          {/* <p className="mt-3 max-w-sm text-sm text-zinc-600">
             From everyday totes to occasion clutches — find the bag that moves with you.
-          </p>
+          </p> */}
 
           <ul className="mt-8 grid grid-cols-2 gap-x-8 gap-y-2.5">
             {list.map((tile) => (
@@ -367,19 +394,17 @@ function MegaPanel({
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Mobile drawer — search pill + main links + categories + featured + contact
+// Mobile drawer — main links + categories + featured + contact
 // ────────────────────────────────────────────────────────────────────────────
 
 function MobileDrawer({
   pathname,
   tiles,
   onClose,
-  onOpenSearch,
 }: {
   pathname: string;
   tiles: CategoryTile[];
   onClose: () => void;
-  onOpenSearch: () => void;
 }) {
   const featured = tiles.slice(0, 2);
 
@@ -402,18 +427,6 @@ function MobileDrawer({
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
-        {/* Search pill */}
-        <div className="border-b border-zinc-100 p-5">
-          <button
-            type="button"
-            onClick={onOpenSearch}
-            className="flex w-full items-center gap-3 rounded-full border border-zinc-300 px-4 py-2.5 text-left text-sm text-zinc-500 transition-colors hover:border-zinc-900"
-          >
-            <Search className="size-4 shrink-0" />
-            <span className="truncate">Search bags, categories…</span>
-          </button>
-        </div>
-
         {/* Main links */}
         <nav className="border-b border-zinc-100 px-5 py-2">
           <ul>

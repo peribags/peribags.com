@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { ArrowRight, Check, ChevronRight, X } from "lucide-react";
 import type { ProductDetail } from "@/lib/services/storefront/product-detail.service";
+import { submitEnquiryAction } from "@/app/(storefront)/products/actions";
+import { COUNTRY_CODES } from "@/lib/country-codes";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -126,13 +128,12 @@ export default function ProductInfo({ product }: Props) {
         </p>
       )}
 
-      {/* Enquiry dialog */}
-      {enquiryOpen && (
-        <EnquiryDialog
-          product={product}
-          onClose={() => setEnquiryOpen(false)}
-        />
-      )}
+      {/* Enquiry dialog — stays mounted so open/close can transition */}
+      <EnquiryDialog
+        product={product}
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+      />
     </div>
   );
 }
@@ -141,19 +142,30 @@ export default function ProductInfo({ product }: Props) {
 // Enquiry dialog (modal)
 // ─────────────────────────────────────────────────────────────────────────────
 
+const CLOSE_MS = 400;
+
 function EnquiryDialog({
   product,
+  open,
   onClose,
 }: {
   product: ProductDetail;
+  open: boolean;
   onClose: () => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     setPortalTarget(document.body);
+  }, []);
+
+  // Body scroll lock + Escape — only while open.
+  useEffect(() => {
+    if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
@@ -164,112 +176,190 @@ function EnquiryDialog({
       document.body.style.overflow = prev;
       window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, [open, onClose]);
+
+  // Close, then reset the form once the exit transition has finished.
+  const handleClose = () => {
+    onClose();
+    window.setTimeout(() => {
+      setSubmitted(false);
+      setError(null);
+      formRef.current?.reset();
+    }, CLOSE_MS);
+  };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const fd = new FormData(e.currentTarget);
     setSubmitting(true);
-    // TODO: wire to /api/enquiry once that route exists.
-    await new Promise((r) => setTimeout(r, 600));
+    setError(null);
+
+    const res = await submitEnquiryAction({
+      productId: product.id,
+      productName: product.name,
+      name: String(fd.get("name") ?? ""),
+      email: String(fd.get("email") ?? ""),
+      countryCode: String(fd.get("countryCode") ?? "+91"),
+      phone: String(fd.get("phone") ?? ""),
+      message: String(fd.get("message") ?? ""),
+      sourceUrl: window.location.href,
+    });
+
     setSubmitting(false);
-    setSubmitted(true);
+    if ("error" in res) setError(res.error);
+    else setSubmitted(true);
   };
 
   if (!portalTarget) return null;
 
   const content = (
     <div
-      className="fixed inset-0 z-[110] grid place-items-end overflow-y-auto bg-zinc-950/60 backdrop-blur-sm sm:place-items-center sm:p-4"
       role="dialog"
       aria-modal="true"
-      onClick={onClose}
+      aria-hidden={!open}
+      className={cn("fixed inset-0 z-[110]", !open && "pointer-events-none")}
     >
-      <div
-        className="w-full max-w-lg bg-white p-6 shadow-[0_24px_64px_-24px_rgba(0,0,0,0.5)] sm:p-8"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {!submitted ? (
-          <>
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-                  Enquiry
-                </p>
-                <h2 className="mt-2 text-xl font-medium tracking-tight text-zinc-950 sm:text-2xl">
-                  {product.name}
-                </h2>
+      {/* Backdrop — fades */}
+      <button
+        type="button"
+        aria-label="Close"
+        tabIndex={-1}
+        onClick={handleClose}
+        style={{
+          transitionProperty: "opacity",
+          transitionDuration: "300ms",
+          transitionTimingFunction: "ease-out",
+          opacity: open ? 1 : 0,
+        }}
+        className={cn(
+          "absolute inset-0 bg-zinc-950/60 backdrop-blur-sm",
+          !open && "pointer-events-none",
+        )}
+      />
+
+      {/* Panel — slides up + fades */}
+      <div className="pointer-events-none absolute inset-0 grid place-items-end sm:place-items-center sm:p-4">
+        <div
+          style={{
+            transitionProperty: "opacity, translate",
+            transitionDuration: "400ms",
+            transitionTimingFunction: "cubic-bezier(0.22, 1, 0.36, 1)",
+            opacity: open ? 1 : 0,
+            translate: open ? "0 0" : "0 2rem",
+          }}
+          className={cn(
+            "max-h-[calc(100vh-2rem)] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-white p-6 shadow-[0_24px_64px_-24px_rgba(0,0,0,0.5)] sm:rounded-2xl sm:p-8",
+            // pointer-events must follow `open` — a hardcoded `auto` would
+            // override the closed container and invisibly block the page.
+            open ? "pointer-events-auto" : "pointer-events-none",
+          )}
+        >
+          {!submitted ? (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                    Enquiry
+                  </p>
+                  <h2 className="mt-2 text-xl font-medium tracking-tight text-zinc-950 sm:text-2xl">
+                    {product.name}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  aria-label="Close"
+                  className="grid size-9 place-items-center rounded-full text-zinc-900 transition-colors hover:bg-zinc-100"
+                >
+                  <X className="size-5" />
+                </button>
               </div>
+
+              <p className="mt-2 text-sm text-zinc-600">
+                Tell us a little about what you need — we'll get back within a
+                business day.
+              </p>
+
+              <form ref={formRef} onSubmit={onSubmit} className="mt-6 space-y-4">
+                <Field label="Your name" name="name" required />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Email" name="email" type="email" required />
+
+                  {/* Phone with country code */}
+                  <label className="block">
+                    <span className="block text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                      Phone
+                    </span>
+                    <div className="mt-2 flex">
+                      <select
+                        name="countryCode"
+                        defaultValue="+91"
+                        aria-label="Country code"
+                        className="shrink-0 rounded-l-lg border border-r-0 border-zinc-300 bg-zinc-50 px-2 py-2.5 text-sm text-zinc-900 transition-colors focus:border-zinc-950 focus:outline-none focus:ring-0"
+                      >
+                        {COUNTRY_CODES.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        name="phone"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel-national"
+                        placeholder="98765 43210"
+                        className="block w-full min-w-0 rounded-r-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 transition-colors placeholder:text-zinc-400 focus:border-zinc-950 focus:outline-none focus:ring-0"
+                      />
+                    </div>
+                  </label>
+                </div>
+                <Field
+                  label="Message"
+                  name="message"
+                  textarea
+                  defaultValue={`Hi — I'd like to enquire about the ${product.name}.`}
+                  required
+                />
+
+                {error && (
+                  <p role="alert" className="text-sm text-red-600">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-zinc-950 px-6 py-3.5 text-sm font-medium tracking-tight text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
+                >
+                  {submitting ? "Sending…" : "Send enquiry"}
+                  {!submitting && <ArrowRight className="size-4" />}
+                </button>
+              </form>
+            </>
+          ) : (
+            <div className="py-6 text-center">
+              <span className="mx-auto grid size-12 place-items-center rounded-full bg-emerald-50 text-emerald-700">
+                <Check className="size-6" strokeWidth={2.5} />
+              </span>
+              <h2 className="mt-5 text-xl font-medium tracking-tight text-zinc-950">
+                Thanks — we'll be in touch.
+              </h2>
+              <p className="mt-2 text-sm text-zinc-600">
+                We've received your enquiry about <strong>{product.name}</strong>{" "}
+                and will reply within one business day.
+              </p>
               <button
                 type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="grid size-9 place-items-center rounded-full text-zinc-900 hover:bg-zinc-100"
+                onClick={handleClose}
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-zinc-950 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-zinc-800"
               >
-                <X className="size-5" />
+                Close
               </button>
             </div>
-
-            <p className="mt-2 text-sm text-zinc-600">
-              Tell us a little about what you need — we'll get back within a
-              business day.
-            </p>
-
-            <form onSubmit={onSubmit} className="mt-6 space-y-4">
-              <Field label="Your name" name="name" required />
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Email" name="email" type="email" required />
-                <Field label="Phone" name="phone" type="tel" />
-              </div>
-              <Field
-                label="Message"
-                name="message"
-                textarea
-                defaultValue={`Hi — I'd like to enquire about the ${product.name}.`}
-                required
-              />
-
-              <input
-                type="hidden"
-                name="product_id"
-                value={product.id}
-              />
-              <input
-                type="hidden"
-                name="product_slug"
-                value={product.slug}
-              />
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex w-full items-center justify-center gap-2 bg-zinc-950 px-6 py-3.5 text-sm font-medium tracking-tight text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-400"
-              >
-                {submitting ? "Sending…" : "Send enquiry"}
-                {!submitting && <ArrowRight className="size-4" />}
-              </button>
-            </form>
-          </>
-        ) : (
-          <div className="py-6 text-center">
-            <span className="mx-auto grid size-12 place-items-center rounded-full bg-emerald-50 text-emerald-700">
-              <Check className="size-6" strokeWidth={2.5} />
-            </span>
-            <h2 className="mt-5 text-xl font-medium tracking-tight text-zinc-950">
-              Thanks — we'll be in touch.
-            </h2>
-            <p className="mt-2 text-sm text-zinc-600">
-              We've received your enquiry about <strong>{product.name}</strong>{" "}
-              and will reply within one business day.
-            </p>
-            <button
-              type="button"
-              onClick={onClose}
-              className="mt-6 inline-flex items-center justify-center bg-zinc-950 px-6 py-3 text-sm font-medium text-white hover:bg-zinc-800"
-            >
-              Close
-            </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
@@ -293,7 +383,7 @@ function Field({
   textarea?: boolean;
 }) {
   const baseCls =
-    "block w-full border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 focus:border-zinc-950 focus:outline-none focus:ring-0";
+    "block w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-950 transition-colors placeholder:text-zinc-400 focus:border-zinc-950 focus:outline-none focus:ring-0";
   return (
     <label className="block">
       <span className="block text-[11px] font-medium uppercase tracking-[0.22em] text-zinc-500">

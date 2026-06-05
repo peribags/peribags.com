@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { useCallback, useEffect, useState } from "react";
 import useEmblaCarousel from "embla-carousel-react";
+import AutoScroll from "embla-carousel-auto-scroll";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { type CategoryTile } from "@/lib/category-tiles";
 import { cn } from "@/lib/utils";
@@ -30,12 +31,24 @@ export default function Categories({
   viewAllHref,
   viewAllLabel = "View all categories",
 }: CategoriesProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "start",
-    containScroll: "trimSnaps",
-    loop: false,
-    dragFree: false,
-  });
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      align: "start",
+      loop: true,
+      dragFree: true,
+    },
+    [
+      // Continuous marquee-style autoplay. Pauses on hover, keeps going after
+      // drags / arrow clicks.
+      AutoScroll({
+        speed: 1,
+        startDelay: 0,
+        stopOnInteraction: false,
+        stopOnMouseEnter: true,
+        stopOnFocusIn: true,
+      }),
+    ],
+  );
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
 

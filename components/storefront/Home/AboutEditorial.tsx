@@ -72,7 +72,7 @@ export default function AboutEditorial({
             )}
             <h2
               className={cn(
-                "text-4xl font-light leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl",
+                "text-3xl font-light leading-[1.2] tracking-tight text-white sm:text-5xl lg:text-6xl",
                 kicker && "mt-4",
               )}
             >

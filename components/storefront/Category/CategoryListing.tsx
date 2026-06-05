@@ -10,12 +10,7 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  ChevronDown,
-  ChevronRight,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { ChevronDown, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { CategoryTile } from "@/lib/category-tiles";
 import {
@@ -140,7 +135,7 @@ export default function CategoryListing({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [, startTransition] = useTransition();
+  const [isPending, startTransition] = useTransition();
 
   const specFacets = useMemo(() => buildSpecFacets(products), [products]);
 
@@ -169,9 +164,7 @@ export default function CategoryListing({
 
     let arr = products;
     if (subSet.size > 0)
-      arr = arr.filter((p) =>
-        p.subcategorySlugs.some((s) => subSet.has(s)),
-      );
+      arr = arr.filter((p) => p.subcategorySlugs.some((s) => subSet.has(s)));
     if (hasAvailFilter)
       arr = arr.filter((p) => (wantInStock ? p.inStock : !p.inStock));
 
@@ -283,8 +276,7 @@ export default function CategoryListing({
     pushState({ ...state, availability: Array.from(set) });
   };
 
-  const setSort = (sort: SortValue) =>
-    pushState({ ...state, sort });
+  const setSort = (sort: SortValue) => pushState({ ...state, sort });
 
   const resetFilters = useCallback(() => {
     startTransition(() => {
@@ -317,6 +309,23 @@ export default function CategoryListing({
 
   return (
     <section className="bg-white">
+      {/* Filtering overlay — full-screen white veil + circular loader while
+          the URL transition (filter/sort change) is pending. */}
+      <div
+        role="status"
+        aria-hidden={!isPending}
+        className={cn(
+          "fixed inset-0 z-50 grid place-items-center bg-white/50  transition-opacity duration-200",
+          isPending ? "opacity-100" : "pointer-events-none opacity-0",
+        )}
+      >
+        <span
+          aria-hidden
+          className="size-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-950"
+        />
+        <span className="sr-only">Updating results…</span>
+      </div>
+
       <div className="mx-auto max-w-[1600px] px-4 pt-8 pb-16 md:px-6 md:pt-12 md:pb-20 lg:px-[4vw] lg:pt-14 lg:pb-24">
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb">
@@ -330,10 +339,7 @@ export default function CategoryListing({
               <ChevronRight className="size-3.5 text-zinc-400" />
             </li>
             <li>
-              <Link
-                href="/category"
-                className="hover:text-zinc-900"
-              >
+              <Link href="/category" className="hover:text-zinc-900">
                 Categories
               </Link>
             </li>
@@ -407,10 +413,7 @@ export default function CategoryListing({
               <span className="hidden text-zinc-500 sm:inline">Sort by:</span>{" "}
               {sortLabel}
               <ChevronDown
-                className={cn(
-                  "size-3.5",
-                  sortOpen && "rotate-180",
-                )}
+                className={cn("size-3.5", sortOpen && "rotate-180")}
               />
             </button>
             {sortOpen && (
@@ -471,9 +474,7 @@ export default function CategoryListing({
                   </button>
                 )}
               </div>
-              <div className="mt-2 max-h-[calc(100vh-12rem)] overflow-y-auto pr-1">
-                {filterPanel}
-              </div>
+              <div className="mt-2 pr-1">{filterPanel}</div>
             </div>
           </aside>
 
@@ -573,7 +574,12 @@ function collectActiveChips(
 
   for (const [key, values] of Object.entries(state.specs)) {
     for (const value of values) {
-      chips.push({ kind: "spec", label: `${key}: ${value}`, value, specKey: key });
+      chips.push({
+        kind: "spec",
+        label: `${key}: ${value}`,
+        value,
+        specKey: key,
+      });
     }
   }
 
@@ -645,8 +651,9 @@ function AccordionFilter({
 }) {
   const showSubcategory = subcategories.length > 0;
 
-  const initialOpen: AccordionId =
-    showSubcategory ? "subcategory" : specFacets[0]?.key ?? "availability";
+  const initialOpen: AccordionId = showSubcategory
+    ? "subcategory"
+    : (specFacets[0]?.key ?? "availability");
   const [open, setOpen] = useState<AccordionId | null>(initialOpen);
   const toggle = (id: AccordionId) =>
     setOpen((prev) => (prev === id ? null : id));
@@ -682,7 +689,9 @@ function AccordionFilter({
           <AccordionSection
             key={facet.key}
             title={facet.key}
-            summary={selected.length === 0 ? "Any" : `${selected.length} selected`}
+            summary={
+              selected.length === 0 ? "Any" : `${selected.length} selected`
+            }
             isOpen={open === facet.key}
             onToggle={() => toggle(facet.key)}
           >
@@ -758,15 +767,30 @@ function AccordionSection({
           {!isOpen && summary && <span>{summary}</span>}
           <ChevronDown
             className={cn(
-              "size-4 text-zinc-500",
+              "size-4 text-zinc-500 transition-transform duration-300 ease-out",
               isOpen && "rotate-180",
             )}
           />
         </span>
       </button>
-      {isOpen && (
-        <div className="mt-4">{children}</div>
-      )}
+      {/* Grid-rows trick animates height from 0 → auto without measuring. */}
+      <div
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="overflow-hidden">
+          <div
+            className={cn(
+              "pt-4 transition-opacity duration-300 ease-out",
+              isOpen ? "opacity-100" : "opacity-0",
+            )}
+          >
+            {children}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -853,7 +877,9 @@ function MobileFilterSheet({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 pb-6">{children}</div>
+      <div className="flex-1 overflow-y-auto px-5 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {children}
+      </div>
 
       <div className="flex shrink-0 items-center justify-between gap-3 border-t border-zinc-200 px-5 py-4">
         <button
