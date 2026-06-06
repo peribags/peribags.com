@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { extractColorVariants } from "@/lib/color-swatches";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
 import type { CategoryTile } from "@/lib/category-tiles";
@@ -155,6 +156,7 @@ type ProductRow = {
   images: string[] | null;
   price_paise: number | null;
   in_stock: boolean;
+  options: unknown;
 };
 
 function toCard(p: ProductRow): NewArrivalCard {
@@ -166,6 +168,7 @@ function toCard(p: ProductRow): NewArrivalCard {
     imageUrl: key ? r2PublicUrl(key) : undefined,
     pricePaise: p.price_paise,
     inStock: p.in_stock,
+    colorVariants: extractColorVariants(p.options, r2PublicUrl),
   };
 }
 
@@ -177,7 +180,7 @@ async function resolveManualProducts(
 
   const { data, error } = await supabase
     .from("products")
-    .select("id, slug, name, images, price_paise, in_stock")
+    .select("id, slug, name, images, price_paise, in_stock, options")
     .eq("published", true)
     .in("id", ids);
 
@@ -199,7 +202,7 @@ async function resolveProductsByCategories(
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, slug, name, images, price_paise, in_stock, product_categories!inner ( category_id )",
+      "id, slug, name, images, price_paise, in_stock, options, product_categories!inner ( category_id )",
     )
     .eq("published", true)
     .in("product_categories.category_id", categoryIds)

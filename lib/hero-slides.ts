@@ -33,11 +33,11 @@ export const heroSlides: HeroSlide[] = [
   {
     id: "everyday",
     imageUrl: "/hero1.webp",
-    alt: "Perry leather tote in everyday use.",
+    alt: "Peri leather tote in everyday use.",
     kicker: "Everyday Essentials",
     heading: "One bag. Every day.",
     description:
-      "Totes and slings designed to carry the whole of your day — and look like they were made to.",
+      "Totes and slings bags designed to carry the whole of your day — and look like they were made to.",
     cta: { label: "Explore totes", href: "/products" },
     gradient: "bg-gradient-to-br from-amber-900 to-zinc-950",
   },

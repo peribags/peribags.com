@@ -131,21 +131,20 @@ export default function ReelsShowcase({
         )}
 
         {/* Center-scale styling. Outer slide stays at full layout size so
-            Embla's measurements stay accurate; only the INNER element scales. */}
+            Embla's measurements stay accurate; only the INNER element scales.
+            Opacity stays at 1 across every reel so all posters remain fully
+            visible — the centring cue is the scale change, not dimming. */}
         <style>{`
           .perry-reel-slide { flex: 0 0 auto; }
           .perry-reel-inner {
             transform: scale(0.78);
             transform-origin: center center;
-            opacity: 0.4;
-            transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1),
-                        opacity 500ms ease-out;
-            will-change: transform, opacity;
+            transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: transform;
             backface-visibility: hidden;
           }
           .perry-reel-slide.is-snapped .perry-reel-inner {
             transform: scale(1);
-            opacity: 1;
           }
           /* Hide the play affordance on the active reel — it's playing. */
           .perry-reel-slide.is-snapped .perry-reel-play { opacity: 0; }
@@ -228,19 +227,37 @@ function ReelCard({
           className="absolute inset-0 z-0 size-full object-cover"
         />
 
+        {/* Poster image — sits above the paused video on every non-centred
+            reel so the user sees the admin-uploaded poster, not the video's
+            first frame (which is what stays painted after a play→pause cycle).
+            Fades out when this reel becomes the centred / playing one. */}
+        {reel.posterUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={reel.posterUrl}
+            alt={reel.title ?? ""}
+            loading="lazy"
+            decoding="async"
+            className={cn(
+              "pointer-events-none absolute inset-0 z-[1] size-full object-cover transition-opacity duration-500",
+              isActive ? "opacity-0" : "opacity-100",
+            )}
+          />
+        )}
+
         {/* Dim veil — fades out on the centered reel */}
-        <div className="perry-reel-veil pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/60 via-black/15 to-transparent transition-opacity duration-500" />
+        <div className="perry-reel-veil pointer-events-none absolute inset-0 z-[2] bg-gradient-to-t from-black/60 via-black/15 to-transparent transition-opacity duration-500" />
 
         {/* Full-area select button — centers/replays this reel */}
         <button
           type="button"
           onClick={() => onSelect(index)}
           aria-label={isActive ? "Active reel" : "Play this reel"}
-          className="absolute inset-0 z-[2] cursor-pointer"
+          className="absolute inset-0 z-[3] cursor-pointer"
         />
 
         {/* Play affordance — hidden on the centered reel via .is-snapped */}
-        <div className="perry-reel-play pointer-events-none absolute inset-0 z-[3] grid place-items-center transition-opacity duration-300">
+        <div className="perry-reel-play pointer-events-none absolute inset-0 z-[4] grid place-items-center transition-opacity duration-300">
           <div className="grid size-12 place-items-center rounded-full border border-white/70 bg-white/10 text-white backdrop-blur-sm">
             <PlayIcon className="ml-0.5 size-5" />
           </div>
@@ -250,7 +267,7 @@ function ReelCard({
         {hasMeta && (
           <div
             className={cn(
-              "absolute inset-x-0 bottom-0 z-[4] flex flex-col items-start gap-2 p-4 transition-opacity duration-500",
+              "absolute inset-x-0 bottom-0 z-[5] flex flex-col items-start gap-2 p-4 transition-opacity duration-500",
               isActive ? "opacity-100" : "pointer-events-none opacity-0",
             )}
           >

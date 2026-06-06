@@ -18,9 +18,17 @@ export default async function AdminLoginPage({
         <div className="mb-10 text-center">
           <Link
             href="/"
-            className="text-foreground text-lg font-semibold tracking-tight"
+            aria-label="peribags"
+            className="inline-block transition-opacity hover:opacity-80"
           >
-            peribags
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.webp"
+              alt="peribags"
+              width={56}
+              height={56}
+              className="mx-auto h-14 w-auto"
+            />
           </Link>
           <h1 className="mt-8 text-2xl font-semibold tracking-tight">
             Sign in to Admin

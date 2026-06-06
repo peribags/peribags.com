@@ -368,7 +368,7 @@ export default function CategoryListing({
         </header>
 
         {/* Toolbar */}
-        <div className="sticky top-16 z-10 -mx-4 mt-4 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6 lg:static lg:mx-0 lg:mt-6 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        <div className=" z-10 -mx-4 mt-4 flex items-center justify-between gap-3 border-b border-zinc-200 bg-white/95 px-4 py-3 backdrop-blur md:-mx-6 md:px-6 lg:static lg:mx-0 lg:mt-6 lg:border-none lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
           <Sheet open={filterOpen} onOpenChange={setFilterOpen}>
             <SheetTrigger asChild>
               <button

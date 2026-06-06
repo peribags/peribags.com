@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import type { ColorVariants } from "@/lib/color-swatches";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -20,6 +21,8 @@ export type CatalogueProduct = {
   subcategorySlugs: string[];
   /** Label → values map, derived from the product's `specs` rows. */
   specifications: Record<string, string[]>;
+  /** Resolved Color option group — null when the product has no Color variants. */
+  colorVariants?: ColorVariants | null;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

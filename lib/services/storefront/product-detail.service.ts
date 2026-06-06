@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { type ColorVariants, extractColorVariants } from "@/lib/color-swatches";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
 
@@ -87,6 +88,7 @@ export type RelatedProduct = {
   imageUrl: string;
   inStock: boolean;
   pricePaise: number | null;
+  colorVariants?: ColorVariants | null;
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -215,7 +217,7 @@ async function getRelatedProductsUncached(
   const { data, error } = await supabase
     .from("products")
     .select(
-      "id, slug, name, images, price_paise, in_stock, sort_order, created_at, product_categories!inner ( category_id )",
+      "id, slug, name, images, price_paise, in_stock, options, sort_order, created_at, product_categories!inner ( category_id )",
     )
     .eq("published", true)
     .neq("id", currentProductId)
@@ -242,6 +244,7 @@ async function getRelatedProductsUncached(
       imageUrl: key ? r2PublicUrl(key) : "",
       inStock: !!r.in_stock,
       pricePaise: r.price_paise,
+      colorVariants: extractColorVariants(r.options, r2PublicUrl),
     });
     if (out.length >= limit) break;
   }
@@ -328,6 +331,7 @@ type RelatedRow = {
   images: string[] | null;
   price_paise: number | null;
   in_stock: boolean;
+  options: unknown;
 };
 
 /**

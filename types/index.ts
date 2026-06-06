@@ -284,3 +284,30 @@ export type HomeReelsConfig = {
   description: string | null;
   updatedAt: string | null;
 };
+
+// ────────────────────────────────────────────────────────────────────────────
+
+export type OurWorkItem = {
+  id: string;
+  name: string;
+  /** R2 key for the brand logo. Null renders the name as a typographic wordmark. */
+  logoUrl: string | null;
+  /** R2 key for the product picture. */
+  imageUrl: string;
+  description: string;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OurWorkCreateInput = {
+  name: string;
+  logoUrl?: string | null;
+  imageUrl: string;
+  description?: string;
+  sortOrder?: number;
+  published?: boolean;
+};
+
+export type OurWorkUpdateInput = Partial<OurWorkCreateInput>;

@@ -12,6 +12,8 @@ export const CACHE_TAGS = {
   sections: "home-sections",
   /** Homepage reels carousel — items + heading config. */
   reels: "home-reels",
+  /** /our-work page items. */
+  ourWork: "our-work",
   /** Category tree — header mega menu, category pages, tiles. */
   categories: "categories",
   /** All product data — listings, detail pages, search, related. */

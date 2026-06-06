@@ -107,11 +107,22 @@ export default function Categories({
           </div>
         )}
 
-        {/* Tile widths defined in plain CSS for Embla slides. */}
+        {/* Tile widths defined in plain CSS for Embla slides.
+            Embla's loop mode is incompatible with flex `gap` on the track —
+            wrap-around slides drop the gap and visually overlap. We use
+            per-slide right padding instead, so spacing follows the slide
+            wherever the loop moves it. */}
         <style>{`
-          .perry-cat-slide { flex: 0 0 calc(50% - 0.375rem); min-width: 0; }
+          .perry-cat-slide {
+            flex: 0 0 50%;
+            min-width: 0;
+            padding-right: 0.75rem;
+          }
           @media (min-width: 1024px) {
-            .perry-cat-slide { flex-basis: calc(20% - 0.8rem); }
+            .perry-cat-slide {
+              flex-basis: 20%;
+              padding-right: 1rem;
+            }
           }
         `}</style>
 
@@ -122,7 +133,7 @@ export default function Categories({
         >
           {/* Embla viewport */}
           <div ref={emblaRef} className="overflow-hidden">
-            <div className="flex gap-3 lg:gap-4">
+            <div className="flex">
               {tiles.map((tile) => (
                 <TileCard key={tile.id} tile={tile} />
               ))}
@@ -188,7 +199,7 @@ function SliderButton({
 function TileCard({ tile }: { tile: CategoryTile }) {
   return (
     <Link href={tile.href} className="perry-cat-slide group/card block">
-      <div className="relative aspect-[4/5.5] overflow-hidden rounded-md bg-zinc-100">
+      <div className="relative aspect-[4/5.5] overflow-hidden bg-zinc-100">
         {tile.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img

@@ -1,4 +1,5 @@
 import {
+  Briefcase,
   Cable,
   Clapperboard,
   FolderTree,
@@ -84,6 +85,11 @@ export const adminNav: NavGroup[] = [
         href: "/admin/storefront/reels",
         label: "Reels",
         icon: Clapperboard,
+      },
+      {
+        href: "/admin/storefront/our-work",
+        label: "Our Work",
+        icon: Briefcase,
       },
     ],
   },

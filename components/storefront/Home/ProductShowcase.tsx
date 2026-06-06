@@ -70,7 +70,7 @@ export default function ProductShowcase({
         {/* Grid — 2 col mobile, 4 col desktop */}
         <div
           className={cn(
-            "grid grid-cols-2 gap-x-4 gap-y-12 lg:grid-cols-5 lg:gap-x-6 lg:gap-y-16",
+            "grid grid-cols-2 gap-x-4 gap-y-8 lg:grid-cols-4 lg:gap-x-4 lg:gap-y-16",
             hasHeader ? "mt-12 lg:mt-16" : "mt-0",
           )}
         >

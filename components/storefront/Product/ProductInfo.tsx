@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronRight, X } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Tag, X } from "lucide-react";
 import type { ProductDetail } from "@/lib/services/storefront/product-detail.service";
 // Type-only import — erased at compile time, so no runtime cycle with ProductView.
 import type { VariantState } from "@/components/storefront/Product/ProductView";
@@ -83,6 +83,21 @@ export default function ProductInfo({ product, variantState }: Props) {
           chosen values resolve to one generated combination, Shopify-style. */}
       {hasVariants && variantState && (
         <div className="mt-8 space-y-6">
+          {/* Effective price / availability for the current combination */}
+          <p className="text-sm text-zinc-600">
+            {variantState.pricePaise != null ? (
+              <p className="text-base font-medium tracking-tight text-zinc-950 tabular-nums">
+                {formatINR(variantState.pricePaise)}
+              </p>
+            ) : null}
+            {!variantState.inStock && (
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">
+                Out of stock
+              </p>
+            )}
+            
+          </p>
+
           {variantState.options.map((option) => {
             const selectedName = variantState.selections[option.name];
             return (
@@ -95,7 +110,7 @@ export default function ProductInfo({ product, variantState }: Props) {
                     </span>
                   )}
                 </h3>
-                <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                <div className="mt-3 flex flex-wrap items-center gap-3">
                   {option.values.map((v) => {
                     const active = v.name === selectedName;
                     const available = variantState.isValueAvailable(
@@ -113,11 +128,9 @@ export default function ProductInfo({ product, variantState }: Props) {
                           }
                           aria-pressed={active}
                           aria-label={v.name}
-                          title={
-                            available ? v.name : `${v.name} — unavailable`
-                          }
+                          title={available ? v.name : `${v.name} — unavailable`}
                           className={cn(
-                            "relative size-12 overflow-hidden rounded-full ring-2 ring-offset-2 transition-all duration-200",
+                            "relative size-16 overflow-hidden rounded-lg ring-2 ring-offset-2 transition-all duration-200",
                             active
                               ? "ring-zinc-950"
                               : "ring-zinc-200 hover:ring-zinc-400",
@@ -164,27 +177,6 @@ export default function ProductInfo({ product, variantState }: Props) {
               </div>
             );
           })}
-
-          {/* Effective price / availability for the current combination */}
-          <p className="text-sm text-zinc-600">
-            {variantState.pricePaise != null ? (
-              <span className="text-base font-medium tracking-tight text-zinc-950 tabular-nums">
-                {formatINR(variantState.pricePaise)}
-              </span>
-            ) : (
-              <span>Price on request</span>
-            )}
-            {!variantState.inStock && (
-              <span className="ml-3 text-xs font-medium uppercase tracking-[0.18em] text-zinc-400">
-                Out of stock
-              </span>
-            )}
-            {variantState.selectedVariant?.sku && (
-              <span className="ml-3 font-mono text-[11px] text-zinc-400">
-                SKU {variantState.selectedVariant.sku}
-              </span>
-            )}
-          </p>
         </div>
       )}
 
@@ -198,16 +190,22 @@ export default function ProductInfo({ product, variantState }: Props) {
             {product.specs.map((s, i) => (
               <li
                 key={`${s.label}-${i}`}
-                className="rounded-md border border-zinc-200 px-4 py-3"
+                className="flex items-start gap-3 rounded-md border border-zinc-200 px-4 py-3 transition-colors hover:bg-zinc-100"
               >
-                <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-500">
-                  {s.label}
-                </p>
-                {s.value && (
-                  <p className="mt-1.5 text-sm font-light leading-snug text-zinc-900">
-                    {s.value}
+                <Tag
+                  className="mt-0.5 size-3.5 shrink-0 text-zinc-400"
+                  aria-hidden
+                />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.22em] text-zinc-500">
+                    {s.label}
                   </p>
-                )}
+                  {s.value && (
+                    <p className="mt-1.5 text-sm font-light leading-snug text-zinc-900">
+                      {s.value}
+                    </p>
+                  )}
+                </div>
               </li>
             ))}
           </ul>

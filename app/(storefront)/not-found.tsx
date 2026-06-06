@@ -7,6 +7,7 @@ export default function NotFound() {
       <p className="mt-2 text-zinc-600">
         The page you were looking for doesn&rsquo;t exist.
       </p>
+      
       <Link
         href="/"
         className="mt-6 inline-flex h-10 items-center rounded-full bg-zinc-900 px-5 text-sm font-medium text-white"

@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { CACHE_TAGS } from "@/lib/cache-tags";
+import { extractColorVariants } from "@/lib/color-swatches";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
 import type { CatalogueProduct } from "@/lib/catalogue";
@@ -127,7 +128,7 @@ async function getCategoryListingDataUncached(
   const { data: prodRows, error: prodErr } = await supabase
     .from("products")
     .select(
-      "id, slug, name, images, price_paise, in_stock, specs, sort_order, created_at, product_categories ( category_id )",
+      "id, slug, name, images, price_paise, in_stock, specs, options, sort_order, created_at, product_categories ( category_id )",
     )
     .eq("published", true)
     .in("id", productIds)
@@ -154,6 +155,7 @@ async function getCategoryListingDataUncached(
       inStock: r.in_stock,
       subcategorySlugs: Array.from(new Set(subcategorySlugs)),
       specifications: normalizeSpecs(r.specs),
+      colorVariants: extractColorVariants(r.options, r2PublicUrl),
     };
   });
 
@@ -172,6 +174,7 @@ type ProductRowWithLinks = {
   price_paise: number | null;
   in_stock: boolean;
   specs: unknown;
+  options: unknown;
   product_categories: { category_id: string }[] | null;
 };
 

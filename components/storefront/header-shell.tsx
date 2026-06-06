@@ -131,9 +131,17 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
           {/* Logo — left */}
           <Link
             href="/"
-            className="justify-self-start text-lg font-semibold uppercase transition-opacity hover:opacity-70 lg:text-xl"
+            aria-label={siteConfig.name}
+            className="justify-self-start transition-opacity hover:opacity-70"
           >
-            {siteConfig.name}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.webp"
+              alt={siteConfig.name}
+              width={44}
+              height={44}
+              className="h-10 w-auto lg:h-12"
+            />
           </Link>
 
           {/* Nav — centered (desktop) */}
@@ -232,7 +240,17 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-full max-w-md bg-white p-0"
+                className={cn(
+                  // Full-width on every breakpoint — beats the primitive's
+                  // `w-3/4` / `sm:max-w-sm` / any container `max-w-*` defaults.
+                  "w-screen max-w-none data-[side=right]:w-screen data-[side=right]:sm:max-w-none",
+                  // Smooth open/close — slide the full panel width from the
+                  // right edge instead of the primitive's 40px slide-and-fade.
+                  "duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+                  "data-[side=right]:data-open:slide-in-from-right-full",
+                  "data-[side=right]:data-closed:slide-out-to-right-full",
+                  "bg-white p-0",
+                )}
                 showCloseButton={false}
               >
                 <MobileDrawer
@@ -412,9 +430,14 @@ function MobileDrawer({
     <div className="flex h-full flex-col bg-white">
       {/* Top bar */}
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-5">
-        <span className="text-lg font-semibold uppercase tracking-tight text-zinc-950">
-          {siteConfig.name}
-        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo.webp"
+          alt={siteConfig.name}
+          width={36}
+          height={36}
+          className="h-9 w-auto"
+        />
         <button
           type="button"
           onClick={onClose}

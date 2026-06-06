@@ -115,7 +115,7 @@ export default function AboutPage() {
           <span className="ab-line">
             <span style={{ animationDelay: "160ms" }}>
               We make bags
-              <Chip src="/sling.jpg" alt="A Peri sling bag" delay="900ms" />
+              <Chip src="/2.png" alt="A Peri sling bag" delay="900ms" />
               that carry
             </span>
           </span>
@@ -123,7 +123,7 @@ export default function AboutPage() {
             <span style={{ animationDelay: "300ms" }}>
               whole lives
               <Chip
-                src="/19331.jpg"
+                src="/1.png"
                 alt="Hands at work in the Peri workshop"
                 delay="1050ms"
               />
@@ -184,7 +184,7 @@ export default function AboutPage() {
         <div className="relative">
           <div data-aos="fade-up">
             <RevealImage
-              src="/19331.jpg"
+              src="https://images.peribags.com/home-banner/1780766819338-6f4a9431-75ec-4054-8464-7b0b8024be16.webp"
               alt="Artisan hands working leather at the Peri workshop"
               aspect="aspect-[16/10] sm:aspect-[16/8] lg:aspect-[16/7]"
               slideFrom="left"

@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { WhatsAppIcon } from "@/components/storefront/social-links";
+import {
+  getPublishedOurWork,
+  type PublishedOurWorkItem,
+} from "@/lib/services/storefront/our-work.service";
 import { siteConfig, whatsappHref } from "@/lib/site";
 import { cn } from "@/lib/utils";
 
@@ -11,11 +15,8 @@ export const metadata: Metadata = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Content — edit freely.
-// Each work card has three fields: a client/brand logo, a picture of the
-// product, and a short description. Drop logo files in /public/logos and set
-// `logo` to the path (e.g. "/logos/acme.png"). While `logo` is null, a clean
-// typographic wordmark of `name` renders instead.
+// Page-level static content — stats, marquee strip, process steps.
+// Work cards are loaded from the DB (admin: Storefront → Our Work).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const STATS = [
@@ -32,71 +33,6 @@ const MARQUEE_WORDS = [
   "Saddle-stitched",
   "Built to outlast trends",
   "Made with care",
-];
-
-type Work = {
-  id: string;
-  /** Client / brand name — used as the wordmark when no logo is set. */
-  name: string;
-  /** Path or URL to the brand logo. Null renders a typographic wordmark. */
-  logo: string | null;
-  /** Picture of the product. */
-  image: string;
-  /** A short description. */
-  description: string;
-};
-
-const WORKS: Work[] = [
-  {
-    id: "heritage-collection",
-    name: "Peri Heritage",
-    logo: null,
-    image: "/hero.webp",
-    description:
-      "Twelve silhouettes cut from a single batch of full-grain hides — one shared character.",
-  },
-  {
-    id: "everyday-totes",
-    name: "Daily Co.",
-    logo: null,
-    image: "/hero1.webp",
-    description:
-      "A commuter tote with laptop-first construction and hand-painted edges.",
-  },
-  {
-    id: "city-slings",
-    name: "Urban Stride",
-    logo: null,
-    image: "/sling.jpg",
-    description:
-      "Compact, hands-free slings that took eleven prototypes to feel effortless.",
-  },
-  {
-    id: "trousseau-series",
-    name: "Vivaah House",
-    logo: null,
-    image:
-      "https://images.unsplash.com/photo-1566150902887-9679ecc155ba?w=1200&auto=format&fit=crop&q=75",
-    description:
-      "Monogrammed saree covers and jewellery cases for wedding houses across three cities.",
-  },
-  {
-    id: "retail-program",
-    name: "Boutique Lane",
-    logo: null,
-    image:
-      "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=1200&auto=format&fit=crop&q=75",
-    description:
-      "Small-batch catalogue lines for boutiques — consistent grain and colour, every run.",
-  },
-  {
-    id: "workshop-edition",
-    name: "Atelier Peri",
-    logo: null,
-    image: "/19331.jpg",
-    description:
-      "Bench-made one-offs from the Mumbai workshop, signed by the hands that built them.",
-  },
 ];
 
 const PROCESS = [
@@ -126,7 +62,9 @@ const PROCESS = [
 // Page
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function OurWorkPage() {
+export default async function OurWorkPage() {
+  const works = await getPublishedOurWork();
+
   return (
     <section className="bg-white">
       {/* Page-scoped keyframes — line-mask hero reveal + craft marquee. */}
@@ -218,19 +156,21 @@ export default function OurWorkPage() {
       <Marquee />
 
       {/* ── Work cards — logo · product picture · short description ─────── */}
-      <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
-        <div className="grid gap-x-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
-          {WORKS.map((work, i) => (
-            <WorkCard
-              key={work.id}
-              work={work}
-              delay={(i % 3) * 100}
-              // Middle column drops a step for an editorial rhythm.
-              className={cn(i % 3 === 1 && "")}
-            />
-          ))}
+      {works.length > 0 && (
+        <div className="mx-auto max-w-[1600px] px-4 py-16 md:px-6 md:py-20 lg:px-[4vw] lg:py-[5vw]">
+          <div className="grid gap-x-6 gap-y-16 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
+            {works.map((work, i) => (
+              <WorkCard
+                key={work.id}
+                work={work}
+                delay={(i % 3) * 100}
+                // Middle column drops a step for an editorial rhythm.
+                className={cn(i % 3 === 1 && "")}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── The making — dark chapter ────────────────────────────────────── */}
       <div className="bg-zinc-950 text-white">
@@ -295,7 +235,7 @@ export default function OurWorkPage() {
         >
           <Link
             href="/contact"
-            className="group inline-flex items-center gap-2 bg-zinc-950 px-7 py-3.5 text-sm font-medium tracking-tight text-white transition-colors duration-300 hover:bg-zinc-800"
+            className="group inline-flex items-center rounded-full gap-2 bg-zinc-950 px-7 py-3.5 text-sm font-medium tracking-tight text-white transition-colors duration-300 hover:bg-zinc-800"
           >
             Start an enquiry
             <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-0.5" />
@@ -306,7 +246,7 @@ export default function OurWorkPage() {
             )}
             target="_blank"
             rel="noreferrer"
-            className="group inline-flex items-center gap-2 border border-zinc-300 px-7 py-3.5 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:border-zinc-900"
+            className="group inline-flex items-center rounded-full gap-2 border border-zinc-300 px-7 py-3.5 text-sm font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:border-zinc-900"
           >
             <WhatsAppIcon className="size-4" />
             Chat on WhatsApp
@@ -357,7 +297,7 @@ function WorkCard({
   delay,
   className,
 }: {
-  work: Work;
+  work: PublishedOurWorkItem;
   delay: number;
   className?: string;
 }) {
@@ -373,7 +313,7 @@ function WorkCard({
           <div className="aspect-[4/5]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={work.image}
+              src={work.imageUrl}
               alt={work.name}
               loading="lazy"
               decoding="async"
@@ -384,13 +324,13 @@ function WorkCard({
 
         {/* Logo plate — floats over the picture's bottom edge */}
         <div className="absolute -bottom-6 left-4 z-10 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover/card:-translate-y-1.5">
-          <span className="flex h-12 min-w-24 items-center justify-center bg-white px-5 shadow-[0_16px_32px_-16px_rgba(15,15,15,0.3)]">
-            {work.logo ? (
+          <span className="flex h-24 min-w-20 px-2 py-4 rounded-lg items-center justify-center bg-white px-5 shadow-[0_16px_32px_-16px_rgba(15,15,15,0.3)]">
+            {work.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={work.logo}
+                src={work.logoUrl}
                 alt={`${work.name} logo`}
-                className="max-h-6 w-auto max-w-32 object-contain"
+                className="h-full w-auto max-w-32 object-contain"
               />
             ) : (
               <span className="font-serif text-sm tracking-[0.14em] text-zinc-950 uppercase">
@@ -406,7 +346,6 @@ function WorkCard({
         <p className="max-w-sm text-sm leading-relaxed text-zinc-600">
           {work.description}
         </p>
-        {/* <ArrowUpRight className="mt-0.5 size-4 shrink-0 text-zinc-300 transition-all duration-300 group-hover/card:-translate-y-0.5 group-hover/card:translate-x-0.5 group-hover/card:text-zinc-950" /> */}
       </div>
     </article>
   );

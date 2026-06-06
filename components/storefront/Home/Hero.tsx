@@ -56,8 +56,6 @@ export default function Hero({
 
   if (total === 0) return null;
 
-  const pad = (n: number) => String(n + 1).padStart(2, "0");
-
   // Each height falls back to the other; both feed CSS vars so the height can
   // differ per breakpoint. When neither is set, use the responsive default.
   const hasCustomHeight = Boolean(heightDesktop || heightMobile);
@@ -92,72 +90,12 @@ export default function Hero({
             slide={slide}
             active={i === active}
             priority={i === 0}
+            currentIndex={active}
+            totalSlides={total}
+            onPrev={() => go(active - 1)}
+            onNext={() => go(active + 1)}
           />
         ))}
-
-        {/* Bottom-right cluster: progress lines, counter, arrows. */}
-        {total > 1 && (
-          <div className="absolute bottom-6 right-5 z-30 flex flex-col items-end gap-5 sm:bottom-8 sm:right-8 lg:bottom-10 lg:right-12">
-            {/* Progress lines — one per slide; active line fills over duration. */}
-            <div className="flex items-center gap-2">
-              {slides.map((s, i) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => go(i)}
-                  aria-label={`Show slide ${i + 1}`}
-                  aria-current={i === active}
-                  className="relative h-px w-8 overflow-hidden bg-white/25 transition-colors duration-300 hover:bg-white/40 sm:w-12"
-                >
-                  {i < active && (
-                    <span className="absolute inset-0 bg-white/80" aria-hidden />
-                  )}
-                  {i === active && (
-                    <span
-                      key={`fill-${i}`}
-                      className="absolute inset-0 origin-left bg-white"
-                      style={{
-                        animation: `hero-progress ${SLIDE_DURATION_MS}ms linear forwards`,
-                        transformOrigin: "left",
-                      }}
-                      aria-hidden
-                    />
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Counter + arrows */}
-            <div className="flex items-center gap-4">
-              <div className="font-mono text-[11px] tracking-[0.22em] tabular-nums text-white/60">
-                <span className="text-base font-medium text-white">
-                  {pad(active)}
-                </span>
-                <span className="mx-1.5">/</span>
-                <span>{pad(total - 1)}</span>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => go(active - 1)}
-                  aria-label="Previous slide"
-                  className="group/btn grid size-10 place-items-center rounded-full border border-white/25 text-white/85 transition-all duration-200 hover:border-white hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                >
-                  <ArrowLeft className="size-4 transition-transform duration-200 group-hover/btn:-translate-x-0.5" />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => go(active + 1)}
-                  aria-label="Next slide"
-                  className="group/btn grid size-10 place-items-center rounded-full border border-white/25 text-white/85 transition-all duration-200 hover:border-white hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-                >
-                  <ArrowRight className="size-4 transition-transform duration-200 group-hover/btn:translate-x-0.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );
@@ -177,15 +115,26 @@ function SlideView({
   slide,
   active,
   priority,
+  currentIndex,
+  totalSlides,
+  onPrev,
+  onNext,
 }: {
   slide: HeroBannerSlide;
   active: boolean;
   priority: boolean;
+  currentIndex: number;
+  totalSlides: number;
+  onPrev: () => void;
+  onNext: () => void;
 }) {
   const { desktopMedia, mobileMedia } = slide;
   const hasText = Boolean(
     slide.kicker || slide.heading || slide.description || slide.cta,
   );
+  const showNav = totalSlides > 1;
+  const showOverlay = hasText || showNav;
+  const pad = (n: number) => String(n + 1).padStart(2, "0");
 
   return (
     <div
@@ -238,12 +187,12 @@ function SlideView({
 
       {/* Dark overlay for text legibility — only when the slide has overlay copy. */}
       {hasText && (
-        <div className="absolute inset-0 bg-gradient-to-tr from-black/50 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-transparent to-transparent" />
       )}
 
       {/* Content — bottom-left */}
-      {hasText && (
-        <div className="absolute inset-x-0 bottom-0 z-10 px-6 sm:px-10 lg:px-14 pb-20 lg:pb-14">
+      {showOverlay && (
+        <div className="absolute inset-x-0 bottom-0 z-10 px-6 sm:px-10 lg:px-14 pb-10 lg:pb-14">
           <div className="max-w-2xl">
             {slide.kicker && (
               <p
@@ -298,6 +247,48 @@ function SlideView({
                   {slide.cta.label}
                   <ArrowRight className="size-4 transition-transform duration-200 group-hover/cta:translate-x-0.5" />
                 </Link>
+              </div>
+            )}
+
+            {/* Slide navigation — sits in the document flow, below the CTA,
+                left-aligned. No absolute positioning. */}
+            {showNav && (
+              <div
+                data-active={active}
+                className={cn(
+                  TEXT_ENTRY,
+                  "data-[active=true]:delay-[540ms]",
+                  hasText ? "mt-8" : "mt-0",
+                  "flex items-center gap-4",
+                )}
+              >
+                <div className="font-mono text-[11px] tracking-[0.22em] tabular-nums text-white/60">
+                  <span className="text-base font-medium text-white">
+                    {pad(currentIndex)}
+                  </span>
+                  <span className="mx-1.5">/</span>
+                  <span>{pad(totalSlides - 1)}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={onPrev}
+                    aria-label="Previous slide"
+                    tabIndex={active ? 0 : -1}
+                    className="group/btn grid size-10 place-items-center rounded-full border border-white/25 text-white/85 transition-all duration-200 hover:border-white hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                  >
+                    <ArrowLeft className="size-4 transition-transform duration-200 group-hover/btn:-translate-x-0.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onNext}
+                    aria-label="Next slide"
+                    tabIndex={active ? 0 : -1}
+                    className="group/btn grid size-10 place-items-center rounded-full border border-white/25 text-white/85 transition-all duration-200 hover:border-white hover:bg-white hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                  >
+                    <ArrowRight className="size-4 transition-transform duration-200 group-hover/btn:translate-x-0.5" />
+                  </button>
+                </div>
               </div>
             )}
           </div>

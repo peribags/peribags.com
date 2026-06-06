@@ -7,23 +7,37 @@ import {
   mailHref,
 } from "@/lib/site";
 import { SOCIAL_LINKS } from "@/components/storefront/social-links";
-
-const SHOP_LINKS = [
-  { href: "/category/totes", label: "Totes" },
-  { href: "/category/slings", label: "Sling Bags" },
-  { href: "/category/backpacks", label: "Backpacks" },
-  { href: "/category/wallets", label: "Wallets" },
-  { href: "/category", label: "All categories" },
-];
+import { listPublishedCategoryTree } from "@/lib/services/storefront/categories.service";
 
 const COMPANY_LINKS = [
   { href: "/about", label: "Our story" },
+  { href: "/our-work", label: "Our Work" },
   { href: "/contact", label: "Contact" },
   { href: "/sitemap.xml", label: "Sitemap" },
 ];
 
-export function StorefrontFooter() {
+/** How many top-level categories to surface in the footer's Shop column. */
+const MAX_FOOTER_CATEGORIES = 5;
+
+async function loadShopLinks(): Promise<{ href: string; label: string }[]> {
+  try {
+    const tree = await listPublishedCategoryTree();
+    const categoryLinks = tree
+      .slice(0, MAX_FOOTER_CATEGORIES)
+      .map((c) => ({ href: `/category/${c.slug}`, label: c.name }));
+    return [
+      ...categoryLinks,
+      { href: "/category", label: "All categories" },
+    ];
+  } catch {
+    // If the DB is unreachable, fall back to just the catalogue index.
+    return [{ href: "/category", label: "All categories" }];
+  }
+}
+
+export async function StorefrontFooter() {
   const year = new Date().getFullYear();
+  const SHOP_LINKS = await loadShopLinks();
 
   return (
     <footer className="bg-zinc-950 text-white/70">
@@ -33,9 +47,17 @@ export function StorefrontFooter() {
           <div className="col-span-2 md:col-span-5 lg:col-span-4">
             <Link
               href="/"
-              className="text-xl font-semibold tracking-tight text-white"
+              aria-label={siteConfig.name}
+              className="inline-block transition-opacity hover:opacity-80"
             >
-              {siteConfig.name}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/logo.webp"
+                alt={siteConfig.name}
+                width={56}
+                height={56}
+                className="h-14 w-auto"
+              />
             </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
               Premium leather bags, quietly crafted by hand. Made to carry

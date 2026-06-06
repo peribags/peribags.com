@@ -26,9 +26,14 @@ function SidebarHeader({ collapsed }: { collapsed: boolean }) {
         collapsed ? "justify-center px-2" : "px-5",
       )}
     >
-      <span className="bg-foreground text-background grid size-7 shrink-0 place-items-center rounded-md text-[11px] font-bold tracking-tight">
-        PB
-      </span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo.webp"
+        alt="peribags"
+        width={28}
+        height={28}
+        className="size-7 shrink-0 object-contain"
+      />
       {!collapsed && (
         <div className="flex min-w-0 flex-1 flex-col leading-none">
           <Link

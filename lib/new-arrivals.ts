@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import type { ColorVariants } from "@/lib/color-swatches";
 
 export type NewArrivalCard = {
   id: string;
@@ -9,6 +10,8 @@ export type NewArrivalCard = {
   /** Price in paise (INR × 100). Null = "Price on request". */
   pricePaise: number | null;
   inStock?: boolean;
+  /** Parsed colour swatches — present only when the product's specs name colours. */
+  colorVariants?: ColorVariants | null;
 };
 
 // Static placeholder — swap to `listNewArrivals()` later by mapping

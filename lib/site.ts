@@ -50,7 +50,8 @@ export const siteConfig = {
    * lives in a separate route group with its own layout.
    */
   maintenance: {
-    enabled: process.env.NODE_ENV === 'production' ? true : false,
+    enabled: false,
+    // enabled: process.env.NODE_ENV === "production" ? true : false,
     heading: "We're sprucing the place up.",
     body: "peribags will be back online shortly. For urgent enquiries, reach out via email, phone, or WhatsApp.",
     eta: "Back online soon",
