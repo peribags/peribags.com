@@ -7,7 +7,6 @@ import HomeSections from "@/components/storefront/Home/HomeSections";
 import InstagramFeed from "@/components/storefront/Home/InstagramFeed";
 import ReelsSection from "@/components/storefront/Home/ReelsSection";
 import Trustmarks from "@/components/storefront/Home/Trustmarks";
-import { fallbackHeroBannerSlides } from "@/lib/hero-slides";
 import { r2PublicUrl } from "@/lib/r2";
 import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
 import type { HomeBannerSlide } from "@/types";
@@ -44,23 +43,22 @@ async function loadHeroBanner(): Promise<{
   try {
     const { slides, heightDesktop, heightMobile } =
       await getPublishedHomeBanner();
-    if (slides.length === 0) {
-      return { slides: fallbackHeroBannerSlides, heightDesktop, heightMobile };
-    }
-    return { slides: slides.map(toHeroSlide), heightDesktop, heightMobile };
-  } catch {
-    // If the banner can't be loaded (e.g. DB not configured), fall back so the
-    // homepage still renders.
     return {
-      slides: fallbackHeroBannerSlides,
-      heightDesktop: null,
-      heightMobile: null,
+      slides: slides.map(toHeroSlide),
+      heightDesktop,
+      heightMobile,
     };
+  } catch {
+    // If the banner can't be loaded (e.g. DB not configured), render nothing
+    // for the hero band — no static fallback.
+    return { slides: [], heightDesktop: null, heightMobile: null };
   }
 }
 
 export default async function HomePage() {
   const banner = await loadHeroBanner();
+  
+  
 
   return (
     <>

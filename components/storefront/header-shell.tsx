@@ -75,10 +75,15 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
   // the home page transparent on the initial server + first client render so
   // a transient non-zero `window.scrollY` (browser scroll restoration, iOS
   // URL-bar collapse, layout shifts before paint) can't immediately flip the
-  // header to white. Real scrolls after this point still flip atTop normally.
+  // header to white. Real scrolls after this grace window still flip atTop
+  // normally.
   const [mounted, setMounted] = useState(false);
+  const mountTimeRef = useRef(0);
+  const MOUNT_GRACE_MS = 600;
   useEffect(() => {
     setMounted(true);
+    mountTimeRef.current =
+      typeof performance !== "undefined" ? performance.now() : 0;
   }, []);
 
   // Reset visibility on route change so the header is always visible on entry.
@@ -89,11 +94,19 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
 
   // Track scroll direction + atTop. The scroll listener — not mount — owns
   // `atTop`, so the initial paint stays transparent on home until a real
-  // scroll event fires.
+  // user scroll event fires. Scroll events fired during the post-mount
+  // grace window (image loads, font swaps, AOS animations, iOS URL bar
+  // collapse) are ignored for atTop purposes.
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      setAtTop(y < AT_TOP_THRESHOLD);
+      const sinceMount =
+        typeof performance !== "undefined"
+          ? performance.now() - mountTimeRef.current
+          : MOUNT_GRACE_MS + 1;
+      if (sinceMount > MOUNT_GRACE_MS) {
+        setAtTop(y < AT_TOP_THRESHOLD);
+      }
 
       // Don't hide while mobile sheet is open.
       if (mobileOpen) {
@@ -128,15 +141,20 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
 
       <header
         style={{
+          // Inline so a stale prod CSS / specificity bug can't ever drop these.
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 40,
           transitionProperty: "transform, background-color, color",
-          transitionDuration: "500ms, 300ms, 300ms, 300ms",
+          transitionDuration: "500ms, 300ms, 300ms",
           transitionTimingFunction:
-            "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out, ease-out",
+            "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out",
           transform: hidden ? "translateY(-100%)" : "translateY(0)",
           willChange: "transform",
         }}
         className={cn(
-          "fixed inset-x-0 top-0 z-40",
           transparent ? "bg-transparent text-white" : "bg-white text-zinc-950",
         )}
       >

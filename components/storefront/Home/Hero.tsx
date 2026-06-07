@@ -40,6 +40,11 @@ export default function Hero({
   const [active, setActive] = useState(0);
   const total = slides.length;
 
+
+  console.log(slides,"Slides Data");
+  console.log(heightDesktop, "Height Desktop");
+  console.log(heightMobile, "Height Mobile");
+
   const go = (next: number) => {
     if (total === 0) return;
     setActive(((next % total) + total) % total);
@@ -58,9 +63,20 @@ export default function Hero({
 
   // Each height falls back to the other; both feed CSS vars so the height can
   // differ per breakpoint. When neither is set, use the responsive default.
-  const hasCustomHeight = Boolean(heightDesktop || heightMobile);
-  const desktopH = heightDesktop ?? heightMobile ?? undefined;
-  const mobileH = heightMobile ?? heightDesktop ?? undefined;
+  // We also validate the values look like a CSS length so an admin-saved
+  // bare number (e.g. "600" instead of "600px") falls back to the default
+  // rather than collapsing the hero to 0 height — which would slide the rest
+  // of the page under the transparent header and read as "header is white".
+  const isValidCssLength = (v: unknown): v is string =>
+    typeof v === "string" &&
+    v.trim().length > 0 &&
+    /^[\d.]+(px|rem|em|vh|svh|dvh|vw|svw|dvw|%)?$/i.test(v.trim()) &&
+    /^[\d.]+(px|rem|em|vh|svh|dvh|vw|svw|dvw|%)$/i.test(v.trim());
+  const desktopHRaw = heightDesktop ?? heightMobile ?? null;
+  const mobileHRaw = heightMobile ?? heightDesktop ?? null;
+  const desktopH = isValidCssLength(desktopHRaw) ? desktopHRaw : undefined;
+  const mobileH = isValidCssLength(mobileHRaw) ? mobileHRaw : undefined;
+  const hasCustomHeight = Boolean(desktopH || mobileH);
 
   return (
     <section
