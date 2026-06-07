@@ -1,8 +1,6 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import { ServiceError } from "@/lib/services/shared/errors";
 import type { BannerMediaType, HomeBannerSlide } from "@/types";
 
@@ -58,12 +56,13 @@ export type PublishedHomeBanner = {
  * Published banner slides + the configured banner height, for the storefront.
  * Runs as the anon role under the `*_public_read` RLS policies.
  *
- * Cached indefinitely under the `home-banner` tag — admin banner mutations
- * call `revalidateTag` to refresh it.
+ * DIAGNOSTIC: the `unstable_cache` wrapper + `CACHE_TAGS.banner` tag have been
+ * removed. Every request now hits Supabase directly. This rules out any
+ * caching / revalidation interaction as the cause of the live header bug. If
+ * the bug disappears with this change, the issue was tag-revalidation-driven.
  */
-export const getPublishedHomeBanner = unstable_cache(
-  async (): Promise<PublishedHomeBanner> => {
-    const supabase = createAnonClient();
+export async function getPublishedHomeBanner(): Promise<PublishedHomeBanner> {
+  const supabase = createAnonClient();
 
   const [slidesRes, configRes] = await Promise.all([
     supabase
@@ -91,7 +90,4 @@ export const getPublishedHomeBanner = unstable_cache(
     heightDesktop: configRes.data?.height_desktop ?? null,
     heightMobile: configRes.data?.height_mobile ?? null,
   };
-  },
-  ["storefront-home-banner"],
-  { tags: [CACHE_TAGS.banner] },
-);
+}
