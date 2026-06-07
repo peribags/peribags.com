@@ -11,9 +11,6 @@ import { r2PublicUrl } from "@/lib/r2";
 import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
 import type { HomeBannerSlide } from "@/types";
 
-// Project-wide policy: no caching anywhere. Every request server-renders.
-// export const dynamic = "force-dynamic";
-
 function toHeroSlide(s: HomeBannerSlide): HeroBannerSlide {
   const cta =
     s.ctaLabel && s.ctaHref

@@ -57,17 +57,14 @@ export type PublishedHomeBanner = {
 /**
  * Published banner slides + the configured banner height, for the storefront.
  *
- * DATA-LAYER cache only. The home page route stays `force-dynamic` (every
- * request server-renders), so the route cache is never touched — which is
- * what causes the broken-HTML / header bug on Vercel. Only the Supabase
- * call result is cached, and is invalidated via `updateTag(CACHE_TAGS.banner)`
- * from the admin save action.
+ * Data-layer cache only:
+ *   - The page route is `force-dynamic`, NEVER cached
+ *   - No `revalidatePath` is ever called for storefront routes
+ *   - `unstable_cache` only stores the Supabase function result
+ *   - `updateTag(CACHE_TAGS.banner)` from admin save marks it stale
+ *   - Next page render fetches fresh data
  *
- * Why this is safe: we never call `revalidatePath` for any storefront
- * route. `updateTag` only refreshes the data cache; it does NOT trigger
- * page regeneration. The page route renders fresh per request, calls this
- * function, gets either a cached result or a fresh one — but the rendered
- * HTML structure is identical either way.
+ * Page HTML is identical between cached-data and fresh-data renders.
  */
 export const getPublishedHomeBanner = unstable_cache(
   async (): Promise<PublishedHomeBanner> => {

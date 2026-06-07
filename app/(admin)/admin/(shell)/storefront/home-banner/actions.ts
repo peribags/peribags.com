@@ -19,14 +19,9 @@ import type {
 export type BannerFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateBanner() {
-  // Invalidate ONLY the data-cache tag. The page route stays `force-dynamic`
-  // so it renders fresh per request; this call just tells the cached
-  // `getPublishedHomeBanner()` to refetch from Supabase on the next render.
-  //
-  // CRITICAL: never call `revalidatePath("/", "layout")` or any storefront
-  // path revalidation here. That triggers Next.js's ISR regeneration code
-  // path on Vercel, which is the one that broke the storefront header
-  // (lost `position: fixed`). `updateTag` alone is the safe call.
+  // Tag-only invalidation. Data cache is marked stale, next render refetches.
+  // Page route is `force-dynamic` so it's never cached. We never call
+  // `revalidatePath` for any storefront route.
   updateTag(CACHE_TAGS.banner);
 }
 
