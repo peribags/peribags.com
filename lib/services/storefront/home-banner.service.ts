@@ -1,5 +1,7 @@
 import "server-only";
 
+import { unstable_cache } from "next/cache";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { createAnonClient } from "@/lib/supabase/anon";
 import { ServiceError } from "@/lib/services/shared/errors";
 import type { BannerMediaType, HomeBannerSlide } from "@/types";
@@ -54,40 +56,60 @@ export type PublishedHomeBanner = {
 
 /**
  * Published banner slides + the configured banner height, for the storefront.
- * Runs as the anon role under the `*_public_read` RLS policies.
  *
- * DIAGNOSTIC: the `unstable_cache` wrapper + `CACHE_TAGS.banner` tag have been
- * removed. Every request now hits Supabase directly. This rules out any
- * caching / revalidation interaction as the cause of the live header bug. If
- * the bug disappears with this change, the issue was tag-revalidation-driven.
+ * DATA-LAYER cache only. The home page route stays `force-dynamic` (every
+ * request server-renders), so the route cache is never touched — which is
+ * what causes the broken-HTML / header bug on Vercel. Only the Supabase
+ * call result is cached, and is invalidated via `updateTag(CACHE_TAGS.banner)`
+ * from the admin save action.
+ *
+ * Why this is safe: we never call `revalidatePath` for any storefront
+ * route. `updateTag` only refreshes the data cache; it does NOT trigger
+ * page regeneration. The page route renders fresh per request, calls this
+ * function, gets either a cached result or a fresh one — but the rendered
+ * HTML structure is identical either way.
  */
-export async function getPublishedHomeBanner(): Promise<PublishedHomeBanner> {
-  const supabase = createAnonClient();
+export const getPublishedHomeBanner = unstable_cache(
+  async (): Promise<PublishedHomeBanner> => {
+    const supabase = createAnonClient();
 
-  const [slidesRes, configRes] = await Promise.all([
-    supabase
-      .from("home_banner_slides")
-      .select("*")
-      .eq("published", true)
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: true }),
-    supabase
-      .from("home_banner")
-      .select("height_desktop, height_mobile")
-      .eq("id", true)
-      .maybeSingle(),
-  ]);
+    const [slidesRes, configRes] = await Promise.all([
+      supabase
+        .from("home_banner_slides")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("home_banner")
+        .select("height_desktop, height_mobile")
+        .eq("id", true)
+        .maybeSingle(),
+    ]);
 
-  if (slidesRes.error) {
-    throw new ServiceError(slidesRes.error.message, "DB_ERROR", slidesRes.error);
-  }
-  if (configRes.error) {
-    throw new ServiceError(configRes.error.message, "DB_ERROR", configRes.error);
-  }
+    if (slidesRes.error) {
+      throw new ServiceError(
+        slidesRes.error.message,
+        "DB_ERROR",
+        slidesRes.error,
+      );
+    }
+    if (configRes.error) {
+      throw new ServiceError(
+        configRes.error.message,
+        "DB_ERROR",
+        configRes.error,
+      );
+    }
 
-  return {
-    slides: (slidesRes.data ?? []).map((r) => fromRow(r as unknown as SlideRow)),
-    heightDesktop: configRes.data?.height_desktop ?? null,
-    heightMobile: configRes.data?.height_mobile ?? null,
-  };
-}
+    return {
+      slides: (slidesRes.data ?? []).map((r) =>
+        fromRow(r as unknown as SlideRow),
+      ),
+      heightDesktop: configRes.data?.height_desktop ?? null,
+      heightMobile: configRes.data?.height_mobile ?? null,
+    };
+  },
+  ["storefront-home-banner"],
+  { tags: [CACHE_TAGS.banner] },
+);

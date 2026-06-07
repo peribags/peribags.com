@@ -18,6 +18,9 @@ export const metadata: Metadata = {
   description: `Get in touch with ${siteConfig.name} — call, email, WhatsApp, or visit us in Mumbai.`,
 };
 
+// Project-wide policy: no caching anywhere. Every request server-renders.
+export const dynamic = "force-dynamic";
+
 // Organization structured data for SEO / rich results.
 function orgJsonLd() {
   return {

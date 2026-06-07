@@ -1,9 +1,7 @@
 import "server-only";
 
 import type { Route } from "next";
-import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import { extractColorVariants } from "@/lib/color-swatches";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
@@ -52,15 +50,9 @@ const orderIds = (
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((l) => (l as Record<string, unknown>)[key] as string);
 
-/**
- * Resolved, ready-to-render homepage sections, in display order.
- * Cached indefinitely; tagged with `home-sections` plus `categories` and
- * `products` because the rendered output embeds both — a change to any of the
- * three revalidates it.
- */
-export const getPublishedHomeSections = unstable_cache(
-  async (): Promise<ResolvedHomeSection[]> => {
-    const supabase = createAnonClient();
+/** Resolved, ready-to-render homepage sections, in display order. Uncached — hits DB every call. */
+export async function getPublishedHomeSections(): Promise<ResolvedHomeSection[]> {
+  const supabase = createAnonClient();
 
   const { data, error } = await supabase
     .from("home_sections")
@@ -110,10 +102,7 @@ export const getPublishedHomeSections = unstable_cache(
   }
 
   return out;
-  },
-  ["storefront-home-sections"],
-  { tags: [CACHE_TAGS.sections, CACHE_TAGS.categories, CACHE_TAGS.products] },
-);
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 

@@ -10,6 +10,9 @@ export const metadata = {
     "Browse every peribags category — totes, slings, backpacks, wallets, and more.",
 };
 
+// Project-wide policy: no caching anywhere. Every request server-renders.
+export const dynamic = "force-dynamic";
+
 export default async function CategoryIndexPage() {
   const tree = await listPublishedCategoryTree();
   const tiles = rootNodesToTiles(tree);

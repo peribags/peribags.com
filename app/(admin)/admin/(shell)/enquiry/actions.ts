@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   deleteEnquiry,
@@ -27,8 +26,6 @@ export async function updateEnquiryStatusAction(
   if (!id || !validStatus(status)) return;
 
   await updateEnquiryStatus(id, status);
-  revalidatePath("/admin/enquiry");
-  revalidatePath(`/admin/enquiry/${id}`);
 }
 
 export async function updateEnquiryNotesAction(
@@ -50,7 +47,6 @@ export async function updateEnquiryNotesAction(
     };
   }
 
-  revalidatePath(`/admin/enquiry/${id}`);
   return { ok: true };
 }
 
@@ -58,6 +54,5 @@ export async function deleteEnquiryAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteEnquiry(id);
-  revalidatePath("/admin/enquiry");
   redirect("/admin/enquiry?deleted=1");
 }

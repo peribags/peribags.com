@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createProduct,
   deleteProduct,
@@ -260,11 +258,6 @@ export async function createProductAction(
     };
   }
 
-  revalidatePath("/admin/products");
-  // Refreshes every cached storefront read that embeds products — listings,
-  // detail pages, search, home sections, related strips.
-  updateTag(CACHE_TAGS.products);
-  updateTag(CACHE_TAGS.product(slug));
   redirect("/admin/products?created=1");
 }
 
@@ -327,10 +320,6 @@ export async function updateProductAction(
     };
   }
 
-  revalidatePath("/admin/products");
-  revalidatePath(`/admin/products/${id}`);
-  updateTag(CACHE_TAGS.products);
-  updateTag(CACHE_TAGS.product(slug));
   return { ok: true };
 }
 
@@ -338,7 +327,5 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteProduct(id);
-  revalidatePath("/admin/products");
-  updateTag(CACHE_TAGS.products);
   redirect("/admin/products?deleted=1");
 }

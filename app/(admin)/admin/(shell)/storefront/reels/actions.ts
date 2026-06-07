@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createReel,
   deleteReel,
@@ -16,12 +14,7 @@ import type { HomeReelCreateInput, HomeReelUpdateInput } from "@/types";
 export type ReelFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateReels() {
-  // Admin list re-renders via path; the cached storefront read refreshes via
-  // tag; and the statically prerendered storefront homepage gets its HTML
-  // explicitly invalidated so the edge CDN serves the regenerated page next.
-  revalidatePath("/admin/storefront/reels");
-  revalidatePath("/", "layout");
-  updateTag(CACHE_TAGS.reels);
+  // No-op. All caching removed — every storefront request hits DB directly.
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {
@@ -93,7 +86,6 @@ export async function updateReelAction(
   }
 
   revalidateReels();
-  revalidatePath(`/admin/storefront/reels/${id}`);
   return { ok: true };
 }
 

@@ -1,9 +1,24 @@
 /**
- * Central registry of cache tags used by the storefront's cached reads
- * (`unstable_cache`) and revalidated by admin mutations (`revalidateTag`).
+ * Central registry of cache tags used by storefront `unstable_cache` reads
+ * and revalidated by admin mutations via `updateTag` (Next.js 16) /
+ * `revalidateTag` (legacy alias).
  *
- * Storefront data is cached indefinitely and only refreshed when the matching
- * tag is revalidated — i.e. when the data actually changes in the admin.
+ * Granularity:
+ * - Broad tags (banner, sections, reels, ourWork, categories, products) are
+ *   invalidated when the corresponding entity changes globally.
+ * - Per-entity helpers (product(slug), category(slug)) are invalidated when
+ *   a SPECIFIC record changes, so a single product save doesn't bust the
+ *   entire site's product caches at once.
+ *
+ * Admin code should call BOTH levels: when saving product "x":
+ *   updateTag(CACHE_TAGS.products)        // refreshes lists / related strips
+ *   updateTag(CACHE_TAGS.product(slug))   // refreshes that product's detail
+ *
+ * IMPORTANT: never combine these with `revalidatePath("/", "layout")`. That
+ * call triggers Next.js's ISR regeneration of the page route, which has a
+ * known-bad code path on Vercel for this project (produces broken HTML
+ * where the storefront header loses `position: fixed`). Tag invalidation
+ * alone is safe — it refreshes data without touching the page route cache.
  */
 export const CACHE_TAGS = {
   /** Home hero banner — slides + height config. */
@@ -20,4 +35,6 @@ export const CACHE_TAGS = {
   products: "products",
   /** A single product's detail page. */
   product: (slug: string) => `product:${slug}`,
+  /** A single category's listing page. */
+  category: (slug: string) => `category:${slug}`,
 } as const;

@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createOurWork,
   deleteOurWork,
@@ -14,12 +12,7 @@ import type { OurWorkCreateInput, OurWorkUpdateInput } from "@/types";
 export type OurWorkFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateOurWork() {
-  // Admin list re-renders via path; the cached storefront read refreshes via
-  // tag; and the statically prerendered /our-work page gets its HTML
-  // explicitly invalidated so the edge CDN serves the regenerated page next.
-  revalidatePath("/admin/storefront/our-work");
-  revalidatePath("/our-work", "layout");
-  updateTag(CACHE_TAGS.ourWork);
+  // No-op. All caching removed — every storefront request hits DB directly.
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {
@@ -104,7 +97,6 @@ export async function updateOurWorkAction(
   }
 
   revalidateOurWork();
-  revalidatePath(`/admin/storefront/our-work/${id}`);
   return { ok: true };
 }
 

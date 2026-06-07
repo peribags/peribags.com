@@ -7,6 +7,9 @@ import CategoryListingSkeleton from "./loading";
 import { getCategoryListingData } from "@/lib/services/storefront/products.service";
 import { siteConfig } from "@/lib/site";
 
+// Project-wide policy: no caching anywhere. Every request server-renders.
+export const dynamic = "force-dynamic";
+
 const SITE_URL = siteConfig.url.replace(/\/$/, "");
 
 export async function generateMetadata({

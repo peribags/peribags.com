@@ -1,9 +1,7 @@
 import "server-only";
 
 import type { Route } from "next";
-import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import { extractColorVariants } from "@/lib/color-swatches";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
@@ -44,22 +42,9 @@ export type CategoryListingData = {
 /**
  * Fetch a category by slug along with its direct child categories and every
  * published product reachable from either. Returns `null` when the category
- * doesn't exist (or isn't published).
- *
- * Cached indefinitely per slug — tagged with `categories` and `products`, so
- * any admin change to either revalidates the listing.
+ * doesn't exist (or isn't published). Uncached — hits DB every call.
  */
 export async function getCategoryListingData(
-  slug: string,
-): Promise<CategoryListingData | null> {
-  return unstable_cache(
-    () => getCategoryListingDataUncached(slug),
-    ["storefront-category-listing", slug],
-    { tags: [CACHE_TAGS.categories, CACHE_TAGS.products] },
-  )();
-}
-
-async function getCategoryListingDataUncached(
   slug: string,
 ): Promise<CategoryListingData | null> {
   const supabase = createAnonClient();

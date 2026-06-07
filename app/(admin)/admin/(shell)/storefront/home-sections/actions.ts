@@ -1,8 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createSection,
   deleteSection,
@@ -20,12 +18,7 @@ import type {
 export type SectionFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateSections() {
-  // Admin list re-renders via path; the cached storefront read refreshes via
-  // tag; and the statically prerendered storefront homepage gets its HTML
-  // explicitly invalidated so the edge CDN serves the regenerated page next.
-  revalidatePath("/admin/storefront/home-sections");
-  revalidatePath("/", "layout");
-  updateTag(CACHE_TAGS.sections);
+  // No-op. All caching removed — every storefront request hits DB directly.
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {
@@ -115,7 +108,6 @@ export async function updateSectionAction(
   }
 
   revalidateSections();
-  revalidatePath(`/admin/storefront/home-sections/${id}`);
   return { ok: true };
 }
 

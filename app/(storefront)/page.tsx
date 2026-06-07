@@ -11,11 +11,8 @@ import { r2PublicUrl } from "@/lib/r2";
 import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
 import type { HomeBannerSlide } from "@/types";
 
-// DIAGNOSTIC: force every request to server-render fresh. This eliminates
-// every form of caching for the homepage — no ISR, no static prerender, no
-// regeneration. If the header still breaks after data updates with this on,
-// the bug is in the render code itself, not in cache invalidation.
-export const dynamic = "force-dynamic";
+// Project-wide policy: no caching anywhere. Every request server-renders.
+// export const dynamic = "force-dynamic";
 
 function toHeroSlide(s: HomeBannerSlide): HeroBannerSlide {
   const cta =
@@ -73,7 +70,7 @@ export default async function HomePage() {
         heightDesktop={banner.heightDesktop}
         heightMobile={banner.heightMobile}
       />
-      <HomeSections />
+      {/*<HomeSections />*/}
 
       <AboutEditorial
         kicker="Our Craft"
@@ -111,11 +108,11 @@ export default async function HomePage() {
         background="#ffffff"
       /> */}
 
-      <ReelsSection />
+      {/* <ReelsSection /> */}
 
       {/* <Trustmarks /> */}
 
-      <GoogleReviews />
+      {/* <GoogleReviews /> */}
 
       {/* <InstagramFeed /> */}
 

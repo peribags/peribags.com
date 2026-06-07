@@ -1,8 +1,6 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
-import { CACHE_TAGS } from "@/lib/cache-tags";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
 
@@ -36,13 +34,9 @@ export type PublishedReels = {
   reels: ResolvedReel[];
 };
 
-/**
- * Published reels + section heading config, for the storefront.
- * Cached indefinitely under the `home-reels` tag.
- */
-export const getPublishedReels = unstable_cache(
-  async (): Promise<PublishedReels> => {
-    const supabase = createAnonClient();
+/** Published reels + section heading config, for the storefront. Uncached — hits DB every call. */
+export async function getPublishedReels(): Promise<PublishedReels> {
+  const supabase = createAnonClient();
 
   const [itemsRes, configRes] = await Promise.all([
     supabase
@@ -85,7 +79,4 @@ export const getPublishedReels = unstable_cache(
     description: configRes.data?.description ?? undefined,
     reels,
   };
-  },
-  ["storefront-home-reels"],
-  { tags: [CACHE_TAGS.reels] },
-);
+}

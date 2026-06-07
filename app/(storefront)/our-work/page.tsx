@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   description: `A look inside ${siteConfig.name} — the bags we've made, the hands that make them, and the craft behind every stitch.`,
 };
 
+// Project-wide policy: no caching anywhere. Every request server-renders.
+export const dynamic = "force-dynamic";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Page-level static content — stats, marquee strip, process steps.
 // Work cards are loaded from the DB (admin: Storefront → Our Work).

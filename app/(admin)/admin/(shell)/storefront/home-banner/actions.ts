@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath, updateTag } from "next/cache";
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
@@ -19,15 +19,15 @@ import type {
 export type BannerFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateBanner() {
-  // Admin list re-renders via path.
-  revalidatePath("/admin/storefront/home-banner");
-  // DIAGNOSTIC: storefront revalidation temporarily disabled so we can test
-  // whether the header bug correlates with cache invalidation. With these
-  // calls commented out, the storefront home page will keep serving its
-  // cached prerendered HTML even after banner saves (you'll need to wait or
-  // redeploy to see banner content updates).
-  // revalidatePath("/", "layout");
-  // updateTag(CACHE_TAGS.banner);
+  // Invalidate ONLY the data-cache tag. The page route stays `force-dynamic`
+  // so it renders fresh per request; this call just tells the cached
+  // `getPublishedHomeBanner()` to refetch from Supabase on the next render.
+  //
+  // CRITICAL: never call `revalidatePath("/", "layout")` or any storefront
+  // path revalidation here. That triggers Next.js's ISR regeneration code
+  // path on Vercel, which is the one that broke the storefront header
+  // (lost `position: fixed`). `updateTag` alone is the safe call.
+  updateTag(CACHE_TAGS.banner);
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {
@@ -106,7 +106,6 @@ export async function updateBannerSlideAction(
   }
 
   revalidateBanner();
-  revalidatePath(`/admin/storefront/home-banner/${id}`);
   return { ok: true };
 }
 
