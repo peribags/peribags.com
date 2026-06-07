@@ -11,10 +11,11 @@ import { r2PublicUrl } from "@/lib/r2";
 import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
 import type { HomeBannerSlide } from "@/types";
 
-// ISR: regenerate the homepage at most every 10 seconds. After an admin saves
-// banner data, the next request after 10s gets the fresh content. No tags or
-// revalidatePath calls needed.
-export const revalidate = 10;
+// DIAGNOSTIC: force every request to server-render fresh. This eliminates
+// every form of caching for the homepage — no ISR, no static prerender, no
+// regeneration. If the header still breaks after data updates with this on,
+// the bug is in the render code itself, not in cache invalidation.
+export const dynamic = "force-dynamic";
 
 function toHeroSlide(s: HomeBannerSlide): HeroBannerSlide {
   const cta =
