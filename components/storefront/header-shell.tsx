@@ -71,14 +71,25 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Has the component finished its first commit on the client? Used to keep
+  // the home page transparent on the initial server + first client render so
+  // a transient non-zero `window.scrollY` (browser scroll restoration, iOS
+  // URL-bar collapse, layout shifts before paint) can't immediately flip the
+  // header to white. Real scrolls after this point still flip atTop normally.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Reset visibility on route change so the header is always visible on entry.
   useEffect(() => {
     setHidden(false);
-    setAtTop(window.scrollY < AT_TOP_THRESHOLD);
-    lastScrollY.current = window.scrollY;
+    lastScrollY.current = typeof window !== "undefined" ? window.scrollY : 0;
   }, [pathname]);
 
-  // Track scroll direction + atTop.
+  // Track scroll direction + atTop. The scroll listener — not mount — owns
+  // `atTop`, so the initial paint stays transparent on home until a real
+  // scroll event fires.
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
@@ -102,9 +113,11 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     return () => window.removeEventListener("scroll", onScroll);
   }, [mobileOpen]);
 
-  // Transparent only on home page top. Any open panel forces white.
+  // Transparent only on home page. Before mount we always treat the home
+  // page as "at top" so the first paint matches what the server rendered;
+  // after mount, the scroll listener owns it.
   const transparent =
-    isHome && atTop && !mobileOpen && !megaOpen && !searchOpen;
+    isHome && (!mounted || atTop) && !mobileOpen && !megaOpen && !searchOpen;
 
   return (
     <>
