@@ -57,14 +57,13 @@ export type PublishedHomeBanner = {
 /**
  * Published banner slides + the configured banner height, for the storefront.
  *
- * Data-layer cache only:
- *   - The page route is `force-dynamic`, NEVER cached
- *   - No `revalidatePath` is ever called for storefront routes
- *   - `unstable_cache` only stores the Supabase function result
- *   - `updateTag(CACHE_TAGS.banner)` from admin save marks it stale
- *   - Next page render fetches fresh data
+ * Data-layer cache. The page stays `force-dynamic` so the route is never
+ * cached; this only caches the Supabase function result. `updateTag` from
+ * admin save marks the data stale; next render refetches. No
+ * `revalidatePath` for any storefront route.
  *
- * Page HTML is identical between cached-data and fresh-data renders.
+ * Now safe to cache because the header has no fixed/transparent state to
+ * lose — it's a plain solid white element in normal document flow.
  */
 export const getPublishedHomeBanner = unstable_cache(
   async (): Promise<PublishedHomeBanner> => {

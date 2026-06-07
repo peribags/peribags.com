@@ -1,7 +1,9 @@
 import "server-only";
 
 import type { Route } from "next";
+import { unstable_cache } from "next/cache";
 import { createAnonClient } from "@/lib/supabase/anon";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import { type ColorVariants, extractColorVariants } from "@/lib/color-swatches";
 import { r2PublicUrl } from "@/lib/r2";
 import { ServiceError } from "@/lib/services/shared/errors";
@@ -94,9 +96,27 @@ export type RelatedProduct = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Fetch a published product by slug, joined to its categories. Uncached — hits DB every call.
+ * Fetch a published product by slug, joined to its categories.
+ * Cached per slug. Tags: `products` (broad), `categories` (breadcrumbs),
+ * `product(slug)` (this exact product).
  */
 export async function getProductBySlug(
+  slug: string,
+): Promise<ProductDetail | null> {
+  return unstable_cache(
+    () => getProductBySlugUncached(slug),
+    ["storefront-product-detail", slug],
+    {
+      tags: [
+        CACHE_TAGS.products,
+        CACHE_TAGS.categories,
+        CACHE_TAGS.product(slug),
+      ],
+    },
+  )();
+}
+
+async function getProductBySlugUncached(
   slug: string,
 ): Promise<ProductDetail | null> {
   const supabase = createAnonClient();
@@ -171,7 +191,8 @@ export async function getProductBySlug(
 
 /**
  * Find related products — published, in any of the same categories, not the
- * current product itself. Deduped + ordered by sort then recency. Uncached.
+ * current product itself. Deduped + ordered by sort then recency.
+ * Cached per (currentProductId, limit, ...categoryIds). Tag: `products`.
  */
 export async function getRelatedProducts(
   currentProductId: string,
@@ -179,6 +200,18 @@ export async function getRelatedProducts(
   limit = 4,
 ): Promise<RelatedProduct[]> {
   if (categoryIds.length === 0 || limit <= 0) return [];
+  return unstable_cache(
+    () => getRelatedProductsUncached(currentProductId, categoryIds, limit),
+    ["storefront-related", currentProductId, String(limit), ...categoryIds],
+    { tags: [CACHE_TAGS.products] },
+  )();
+}
+
+async function getRelatedProductsUncached(
+  currentProductId: string,
+  categoryIds: string[],
+  limit: number,
+): Promise<RelatedProduct[]> {
   const supabase = createAnonClient();
 
   const { data, error } = await supabase

@@ -1,6 +1,8 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createProduct,
   deleteProduct,
@@ -258,6 +260,8 @@ export async function createProductAction(
     };
   }
 
+  updateTag(CACHE_TAGS.products);
+  updateTag(CACHE_TAGS.product(slug));
   redirect("/admin/products?created=1");
 }
 
@@ -320,6 +324,8 @@ export async function updateProductAction(
     };
   }
 
+  updateTag(CACHE_TAGS.products);
+  updateTag(CACHE_TAGS.product(slug));
   return { ok: true };
 }
 
@@ -327,5 +333,6 @@ export async function deleteProductAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteProduct(id);
+  updateTag(CACHE_TAGS.products);
   redirect("/admin/products?deleted=1");
 }

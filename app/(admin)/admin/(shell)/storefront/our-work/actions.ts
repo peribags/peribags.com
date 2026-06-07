@@ -1,6 +1,8 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createOurWork,
   deleteOurWork,
@@ -12,7 +14,7 @@ import type { OurWorkCreateInput, OurWorkUpdateInput } from "@/types";
 export type OurWorkFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateOurWork() {
-  // No-op. All caching removed — every storefront request hits DB directly.
+  updateTag(CACHE_TAGS.ourWork);
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {

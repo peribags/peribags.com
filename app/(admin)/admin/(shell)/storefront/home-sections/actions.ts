@@ -1,6 +1,8 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createSection,
   deleteSection,
@@ -18,7 +20,7 @@ import type {
 export type SectionFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateSections() {
-  // No-op. All caching removed — every storefront request hits DB directly.
+  updateTag(CACHE_TAGS.sections);
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {

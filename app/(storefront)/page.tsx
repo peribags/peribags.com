@@ -11,6 +11,9 @@ import { r2PublicUrl } from "@/lib/r2";
 import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
 import type { HomeBannerSlide } from "@/types";
 
+// No caching anywhere — every request server-renders fresh.
+export const dynamic = "force-dynamic";
+
 function toHeroSlide(s: HomeBannerSlide): HeroBannerSlide {
   const cta =
     s.ctaLabel && s.ctaHref
@@ -67,7 +70,8 @@ export default async function HomePage() {
         heightDesktop={banner.heightDesktop}
         heightMobile={banner.heightMobile}
       />
-      {/*<HomeSections />*/}
+
+      <HomeSections />
 
       <AboutEditorial
         kicker="Our Craft"
@@ -105,11 +109,11 @@ export default async function HomePage() {
         background="#ffffff"
       /> */}
 
-      {/* <ReelsSection /> */}
+      <ReelsSection />
 
-      {/* <Trustmarks /> */}
+      <Trustmarks />
 
-      {/* <GoogleReviews /> */}
+      <GoogleReviews />
 
       {/* <InstagramFeed /> */}
 

@@ -19,9 +19,7 @@ import type {
 export type BannerFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateBanner() {
-  // Tag-only invalidation. Data cache is marked stale, next render refetches.
-  // Page route is `force-dynamic` so it's never cached. We never call
-  // `revalidatePath` for any storefront route.
+  // Data-cache tag invalidation only. No `revalidatePath` for storefront.
   updateTag(CACHE_TAGS.banner);
 }
 

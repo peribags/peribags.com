@@ -25,22 +25,13 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/contact", label: "Contact" },
 ];
 
-const AT_TOP_THRESHOLD = 10; // px from top to count as "at hero / top"
-const SCROLL_DELTA = 5; // ignore micro-jitter scrolls
-
 export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  // Scroll-driven UI state. Both default to "show + at top" so the SSR
-  // and first client render produce identical HTML — no hydration flash.
-  const [hidden, setHidden] = useState(false);
-  const [atTop, setAtTop] = useState(true);
-  const lastScrollY = useRef(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
-  const isHome = pathname === "/";
 
   const openMega = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -52,15 +43,11 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     closeTimer.current = setTimeout(() => setMegaOpen(false), delay);
   }, []);
 
-  // Close panels on navigation; reset scroll state so a new route always
-  // starts with a visible header.
+  // Close panels on navigation.
   useEffect(() => {
     setMobileOpen(false);
     setMegaOpen(false);
     setSearchOpen(false);
-    setHidden(false);
-    setAtTop(true);
-    lastScrollY.current = 0;
   }, [pathname]);
 
   // Escape closes mega.
@@ -72,74 +59,23 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Scroll listener — standard editorial header pattern:
-  //   - Scrolling DOWN → hide header (slides up, giving more content space)
-  //   - Scrolling UP   → show header (slides back in, user wants nav)
-  //   - At top of page → show, and on home reset to transparent
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      const isAtTop = y < AT_TOP_THRESHOLD;
-      setAtTop(isAtTop);
-
-      if (mobileOpen || megaOpen || searchOpen) {
-        lastScrollY.current = y;
-        return;
-      }
-
-      const diff = y - lastScrollY.current;
-      if (isAtTop) {
-        // Always visible at top of page.
-        setHidden(false);
-      } else if (diff > SCROLL_DELTA) {
-        // Scrolling DOWN → hide.
-        setHidden(true);
-      } else if (diff < -SCROLL_DELTA) {
-        // Scrolling UP → show.
-        setHidden(false);
-      }
-      lastScrollY.current = y;
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [mobileOpen, megaOpen, searchOpen]);
-
-  // Transparency: only on home, only while still at the top of the page.
-  // Once user scrolls past the hero (`atTop` flips false), the header gets a
-  // solid white bg — even on home — so it reads against page content.
-  const transparent =
-    isHome && atTop && !mobileOpen && !megaOpen && !searchOpen;
+  // Header is ALWAYS solid white on every route — no transparency, no
+  // scroll-driven state, no path conditionals. Kept as a constant so the
+  // existing nav-link conditionals still compile (they always resolve to
+  // the white-bg branch).
+  const transparent = false;
 
   return (
     <>
-      {/* Spacer — ALWAYS rendered, same DOM node on every route. Only its
-          height switches. */}
-      <div
-        aria-hidden
-        className={cn(isHome ? "h-0" : "h-[7.25rem] lg:h-20")}
-      />
-
       <header
         style={{
-          // Inline so a stale prod CSS / specificity bug can't ever drop
-          // these. Identical inline keys on every route — only className
-          // and transform values vary.
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
+          // Relative position — header takes its own height in the document
+          // flow. Z-index keeps the absolute-positioned mega menu (and any
+          // other absolute children) stacking above page content below.
+          position: "relative",
           zIndex: 40,
-          transitionProperty: "transform, background-color, color",
-          transitionDuration: "400ms, 300ms, 300ms",
-          transitionTimingFunction:
-            "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out",
-          transform: hidden ? "translateY(-100%)" : "translateY(0)",
-          willChange: "transform",
         }}
-        className={cn(
-          transparent ? "bg-transparent text-white" : "bg-white text-zinc-950",
-        )}
+        className={cn("bg-white text-zinc-950")}
       >
         <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-3 items-center px-4 md:px-6 lg:h-20 lg:px-[4vw]">
           {/* Logo — left */}

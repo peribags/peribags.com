@@ -5,10 +5,25 @@ import type { Route } from "next";
 import CategoryListing from "@/components/storefront/Category/CategoryListing";
 import CategoryListingSkeleton from "./loading";
 import { getCategoryListingData } from "@/lib/services/storefront/products.service";
+import { listPublishedCategoryTree } from "@/lib/services/storefront/categories.service";
 import { siteConfig } from "@/lib/site";
 
-// Project-wide policy: no caching anywhere. Every request server-renders.
-export const dynamic = "force-dynamic";
+// Statically generate every published category at build time. New slugs are
+// rendered on first visit (dynamicParams defaults to true). Admin saves call
+// `updateTag(CACHE_TAGS.category(slug))` which invalidates the data cache;
+// the static HTML regenerates on the next request to that slug.
+export async function generateStaticParams() {
+  const tree = await listPublishedCategoryTree();
+  const slugs: string[] = [];
+  const walk = (nodes: typeof tree) => {
+    for (const n of nodes) {
+      slugs.push(n.slug);
+      if (n.children?.length) walk(n.children);
+    }
+  };
+  walk(tree);
+  return slugs.map((slug) => ({ slug }));
+}
 
 const SITE_URL = siteConfig.url.replace(/\/$/, "");
 

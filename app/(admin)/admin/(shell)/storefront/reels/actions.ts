@@ -1,6 +1,8 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createReel,
   deleteReel,
@@ -14,7 +16,7 @@ import type { HomeReelCreateInput, HomeReelUpdateInput } from "@/types";
 export type ReelFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateReels() {
-  // No-op. All caching removed — every storefront request hits DB directly.
+  updateTag(CACHE_TAGS.reels);
 }
 
 function emptyToNull(v: FormDataEntryValue | null): string | null {

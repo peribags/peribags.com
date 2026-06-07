@@ -9,10 +9,21 @@ import {
   getRelatedProducts,
   stripHtml,
 } from "@/lib/services/storefront/product-detail.service";
+import { createAnonClient } from "@/lib/supabase/anon";
 import { siteConfig } from "@/lib/site";
 
-// Project-wide policy: no caching anywhere. Every request server-renders.
-export const dynamic = "force-dynamic";
+// Statically generate every published product at build time. New slugs are
+// rendered on first visit (dynamicParams defaults to true). Admin saves call
+// `updateTag(CACHE_TAGS.product(slug))` which invalidates the data cache;
+// the static HTML regenerates on the next request to that slug.
+export async function generateStaticParams() {
+  const supabase = createAnonClient();
+  const { data } = await supabase
+    .from("products")
+    .select("slug")
+    .eq("published", true);
+  return (data ?? []).map((p) => ({ slug: p.slug as string }));
+}
 
 const SITE_URL = siteConfig.url.replace(/\/$/, "");
 

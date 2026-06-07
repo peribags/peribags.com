@@ -1,6 +1,8 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { CACHE_TAGS } from "@/lib/cache-tags";
 import {
   createCategory,
   deleteCategory,
@@ -92,6 +94,7 @@ export async function createCategoryAction(
     };
   }
 
+  updateTag(CACHE_TAGS.categories);
   redirect("/admin/category?created=1");
 }
 
@@ -139,6 +142,8 @@ export async function updateCategoryAction(
     };
   }
 
+  updateTag(CACHE_TAGS.categories);
+  updateTag(CACHE_TAGS.category(slug));
   return { ok: true };
 }
 
@@ -146,5 +151,6 @@ export async function deleteCategoryAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   await deleteCategory(id);
+  updateTag(CACHE_TAGS.categories);
   redirect("/admin/category?deleted=1");
 }
