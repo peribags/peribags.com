@@ -25,17 +25,18 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/contact", label: "Contact" },
 ];
 
-const SCROLL_HIDE_THRESHOLD = 80; // px down before hide kicks in
-const AT_TOP_THRESHOLD = 10; // px from top to count as "at top"
-const MOUNT_GRACE_MS = 600; // ignore scroll-driven atTop flips during first paint
+const AT_TOP_THRESHOLD = 10; // px from top to count as "at hero / top"
+const SCROLL_DELTA = 5; // ignore micro-jitter scrolls
 
 export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [atTop, setAtTop] = useState(true);
-  const [hidden, setHidden] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  // Scroll-driven UI state. Both default to "show + at top" so the SSR
+  // and first client render produce identical HTML — no hydration flash.
+  const [hidden, setHidden] = useState(false);
+  const [atTop, setAtTop] = useState(true);
   const lastScrollY = useRef(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
@@ -51,17 +52,16 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     closeTimer.current = setTimeout(() => setMegaOpen(false), delay);
   }, []);
 
-  // Close panels on navigation.
+  // Close panels on navigation; reset scroll state so a new route always
+  // starts with a visible header.
   useEffect(() => {
     setMobileOpen(false);
     setMegaOpen(false);
     setSearchOpen(false);
+    setHidden(false);
+    setAtTop(true);
+    lastScrollY.current = 0;
   }, [pathname]);
-
-  // Close mega when header hides on scroll-down.
-  useEffect(() => {
-    if (hidden) setMegaOpen(false);
-  }, [hidden]);
 
   // Escape closes mega.
   useEffect(() => {
@@ -72,78 +72,66 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Mount grace window — keeps the home page transparent on initial paint
-  // so a transient non-zero scrollY (iOS URL-bar collapse, layout shifts,
-  // browser scroll restoration) can't immediately flip the header to white.
-  const [mounted, setMounted] = useState(false);
-  const mountTimeRef = useRef(0);
-  useEffect(() => {
-    setMounted(true);
-    mountTimeRef.current =
-      typeof performance !== "undefined" ? performance.now() : 0;
-  }, []);
-
-  // Reset visibility on route change so the header is always visible on entry.
-  useEffect(() => {
-    setHidden(false);
-    lastScrollY.current = typeof window !== "undefined" ? window.scrollY : 0;
-  }, [pathname]);
-
-  // Track scroll direction + atTop. The scroll listener — not mount — owns
-  // `atTop`, so the initial paint stays transparent on home until a real
-  // user scroll fires after the grace window.
+  // Scroll listener — standard editorial header pattern:
+  //   - Scrolling DOWN → hide header (slides up, giving more content space)
+  //   - Scrolling UP   → show header (slides back in, user wants nav)
+  //   - At top of page → show, and on home reset to transparent
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      const sinceMount =
-        typeof performance !== "undefined"
-          ? performance.now() - mountTimeRef.current
-          : MOUNT_GRACE_MS + 1;
-      if (sinceMount > MOUNT_GRACE_MS) {
-        setAtTop(y < AT_TOP_THRESHOLD);
-      }
+      const isAtTop = y < AT_TOP_THRESHOLD;
+      setAtTop(isAtTop);
 
-      // Don't hide while mobile sheet is open.
-      if (mobileOpen) {
+      if (mobileOpen || megaOpen || searchOpen) {
         lastScrollY.current = y;
         return;
       }
 
-      if (y > lastScrollY.current && y > SCROLL_HIDE_THRESHOLD) {
-        setHidden(true); // scrolling down → slide up
-      } else if (y < lastScrollY.current) {
-        setHidden(false); // scrolling up → slide down
+      const diff = y - lastScrollY.current;
+      if (isAtTop) {
+        // Always visible at top of page.
+        setHidden(false);
+      } else if (diff > SCROLL_DELTA) {
+        // Scrolling DOWN → hide.
+        setHidden(true);
+      } else if (diff < -SCROLL_DELTA) {
+        // Scrolling UP → show.
+        setHidden(false);
       }
       lastScrollY.current = y;
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [mobileOpen]);
+  }, [mobileOpen, megaOpen, searchOpen]);
 
-  // Transparent only on home page top. Before mount we always treat the home
-  // page as "at top" so the first paint matches what the server rendered.
+  // Transparency: only on home, only while still at the top of the page.
+  // Once user scrolls past the hero (`atTop` flips false), the header gets a
+  // solid white bg — even on home — so it reads against page content.
   const transparent =
-    isHome && (!mounted || atTop) && !mobileOpen && !megaOpen && !searchOpen;
+    isHome && atTop && !mobileOpen && !megaOpen && !searchOpen;
 
   return (
     <>
-      {/* Spacer — reserves layout space when the header is fixed + solid
-          (non-home pages). Home keeps the hero flush under the transparent
-          header. Mobile is two rows (bar + search), so it needs the taller
-          spacer. */}
-      {!isHome && <div aria-hidden className="h-[7.25rem] lg:h-20" />}
+      {/* Spacer — ALWAYS rendered, same DOM node on every route. Only its
+          height switches. */}
+      <div
+        aria-hidden
+        className={cn(isHome ? "h-0" : "h-[7.25rem] lg:h-20")}
+      />
 
       <header
         style={{
-          // Inline so a stale prod CSS / specificity bug can't ever drop these.
+          // Inline so a stale prod CSS / specificity bug can't ever drop
+          // these. Identical inline keys on every route — only className
+          // and transform values vary.
           position: "fixed",
           top: 0,
           left: 0,
           right: 0,
           zIndex: 40,
           transitionProperty: "transform, background-color, color",
-          transitionDuration: "500ms, 300ms, 300ms",
+          transitionDuration: "400ms, 300ms, 300ms",
           transitionTimingFunction:
             "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out",
           transform: hidden ? "translateY(-100%)" : "translateY(0)",
