@@ -14,8 +14,11 @@ import type { OurWorkCreateInput, OurWorkUpdateInput } from "@/types";
 export type OurWorkFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateOurWork() {
-  // Admin list re-renders via path; the cached storefront read refreshes via tag.
+  // Admin list re-renders via path; the cached storefront read refreshes via
+  // tag; and the statically prerendered /our-work page gets its HTML
+  // explicitly invalidated so the edge CDN serves the regenerated page next.
   revalidatePath("/admin/storefront/our-work");
+  revalidatePath("/our-work", "layout");
   updateTag(CACHE_TAGS.ourWork);
 }
 

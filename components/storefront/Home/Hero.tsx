@@ -41,9 +41,11 @@ export default function Hero({
   const total = slides.length;
 
 
-  console.log(slides,"Slides Data");
-  console.log(heightDesktop, "Height Desktop");
-  console.log(heightMobile, "Height Mobile");
+  useEffect(() => {
+    console.log(slides,"Slides Data");
+    console.log(heightDesktop, "Height Desktop");
+    console.log(heightMobile, "Height Mobile");
+  }, [slides, heightDesktop, heightMobile]);
 
   const go = (next: number) => {
     if (total === 0) return;

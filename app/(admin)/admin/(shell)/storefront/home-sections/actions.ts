@@ -20,8 +20,11 @@ import type {
 export type SectionFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateSections() {
-  // Admin list re-renders via path; the cached storefront read refreshes via tag.
+  // Admin list re-renders via path; the cached storefront read refreshes via
+  // tag; and the statically prerendered storefront homepage gets its HTML
+  // explicitly invalidated so the edge CDN serves the regenerated page next.
   revalidatePath("/admin/storefront/home-sections");
+  revalidatePath("/", "layout");
   updateTag(CACHE_TAGS.sections);
 }
 

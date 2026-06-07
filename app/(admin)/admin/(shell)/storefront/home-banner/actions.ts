@@ -19,8 +19,13 @@ import type {
 export type BannerFormState = { error: string } | { ok: true } | undefined;
 
 function revalidateBanner() {
-  // Admin list re-renders via path; the cached storefront read refreshes via tag.
+  // Admin list re-renders via path; the cached storefront read refreshes via
+  // tag; and the STATICALLY prerendered storefront homepage gets its HTML
+  // explicitly invalidated so Vercel's edge CDN serves the regenerated page
+  // on the next request — without this last call, the cached static HTML for
+  // "/" keeps being served even after the data cache is busted.
   revalidatePath("/admin/storefront/home-banner");
+  revalidatePath("/", "layout");
   updateTag(CACHE_TAGS.banner);
 }
 
