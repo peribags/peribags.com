@@ -25,17 +25,11 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/contact", label: "Contact" },
 ];
 
-const SCROLL_HIDE_THRESHOLD = 80; // px down before hide kicks in
-const AT_TOP_THRESHOLD = 10; // px from top to count as "at top"
-
 export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [atTop, setAtTop] = useState(true);
-  const [hidden, setHidden] = useState(false);
   const [megaOpen, setMegaOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const lastScrollY = useRef(0);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
   const isHome = pathname === "/";
@@ -57,11 +51,6 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     setSearchOpen(false);
   }, [pathname]);
 
-  // Close mega when header hides on scroll-down.
-  useEffect(() => {
-    if (hidden) setMegaOpen(false);
-  }, [hidden]);
-
   // Escape closes mega.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -71,89 +60,34 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Has the component finished its first commit on the client? Used to keep
-  // the home page transparent on the initial server + first client render so
-  // a transient non-zero `window.scrollY` (browser scroll restoration, iOS
-  // URL-bar collapse, layout shifts before paint) can't immediately flip the
-  // header to white. Real scrolls after this grace window still flip atTop
-  // normally.
-  const [mounted, setMounted] = useState(false);
-  const mountTimeRef = useRef(0);
-  const MOUNT_GRACE_MS = 600;
-  useEffect(() => {
-    setMounted(true);
-    mountTimeRef.current =
-      typeof performance !== "undefined" ? performance.now() : 0;
-  }, []);
-
-  // Reset visibility on route change so the header is always visible on entry.
-  useEffect(() => {
-    setHidden(false);
-    lastScrollY.current = typeof window !== "undefined" ? window.scrollY : 0;
-  }, [pathname]);
-
-  // Track scroll direction + atTop. The scroll listener — not mount — owns
-  // `atTop`, so the initial paint stays transparent on home until a real
-  // user scroll event fires. Scroll events fired during the post-mount
-  // grace window (image loads, font swaps, AOS animations, iOS URL bar
-  // collapse) are ignored for atTop purposes.
-  useEffect(() => {
-    const onScroll = () => {
-      const y = window.scrollY;
-      const sinceMount =
-        typeof performance !== "undefined"
-          ? performance.now() - mountTimeRef.current
-          : MOUNT_GRACE_MS + 1;
-      if (sinceMount > MOUNT_GRACE_MS) {
-        setAtTop(y < AT_TOP_THRESHOLD);
-      }
-
-      // Don't hide while mobile sheet is open.
-      if (mobileOpen) {
-        lastScrollY.current = y;
-        return;
-      }
-
-      if (y > lastScrollY.current && y > SCROLL_HIDE_THRESHOLD) {
-        setHidden(true); // scrolling down → slide up
-      } else if (y < lastScrollY.current) {
-        setHidden(false); // scrolling up → slide down
-      }
-      lastScrollY.current = y;
-    };
-
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [mobileOpen]);
-
-  // Transparent only on home page. Before mount we always treat the home
-  // page as "at top" so the first paint matches what the server rendered;
-  // after mount, the scroll listener owns it.
+  // Home: fixed + transparent, no exceptions on scroll. Any open panel
+  // (mobile drawer / mega menu / search modal) forces the header solid white
+  // so the panel chrome reads cleanly against a known background.
   const transparent =
-    isHome && (!mounted || atTop) && !mobileOpen && !megaOpen && !searchOpen;
+    isHome && !mobileOpen && !megaOpen && !searchOpen;
+
+  // Position is dynamic: fixed on home (overlays the hero), relative on every
+  // other route (stays in document flow under a clean white bar).
+  const headerStyle: React.CSSProperties = isHome
+    ? {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 40,
+        transitionProperty: "background-color, color",
+        transitionDuration: "300ms, 300ms",
+        transitionTimingFunction: "ease-out, ease-out",
+      }
+    : {
+        position: "relative",
+        zIndex: 40,
+      };
 
   return (
     <>
-      {/* Spacer — reserves layout space when the header is fixed + solid (non-home pages).
-          Home keeps the hero flush under the transparent header. Mobile is two
-          rows (bar + search), so it needs the taller spacer. */}
-      {!isHome && <div aria-hidden className="h-[7.25rem] lg:h-20" />}
-
       <header
-        style={{
-          // Inline so a stale prod CSS / specificity bug can't ever drop these.
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 40,
-          transitionProperty: "transform, background-color, color",
-          transitionDuration: "500ms, 300ms, 300ms",
-          transitionTimingFunction:
-            "cubic-bezier(0.22, 1, 0.36, 1), ease-out, ease-out",
-          transform: hidden ? "translateY(-100%)" : "translateY(0)",
-          willChange: "transform",
-        }}
+        style={headerStyle}
         className={cn(
           transparent ? "bg-transparent text-white" : "bg-white text-zinc-950",
         )}
