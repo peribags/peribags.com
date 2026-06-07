@@ -375,6 +375,7 @@ export default function CategoryListing({
                 type="button"
                 className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-4 py-2 text-sm text-zinc-900 hover:border-zinc-900 lg:hidden"
               >
+                {/* ddd */}
                 <SlidersHorizontal className="size-3.5" />
                 Filter
                 {activeFilterCount > 0 && (
