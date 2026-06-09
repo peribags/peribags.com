@@ -10,7 +10,13 @@ import {
 } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Download,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { CategoryTile } from "@/lib/category-tiles";
 import {
@@ -362,9 +368,18 @@ export default function CategoryListing({
               </p>
             )}
           </div>
-          <p className="text-xs tabular-nums text-zinc-500 md:text-sm">
-            {filtered.length} {filtered.length === 1 ? "product" : "products"}
-          </p>
+          <div className="flex items-center gap-4 md:flex-col md:items-end md:gap-2">
+            <a
+              href={`/api/catalogue/${String(category.href).split("/").filter(Boolean).pop() ?? ""}`}
+              className="group inline-flex items-center gap-2 rounded-full border border-zinc-900 px-4 py-2 text-xs font-medium tracking-tight text-zinc-900 transition-colors duration-300 hover:bg-zinc-950 hover:text-white sm:text-sm"
+            >
+              <Download className="size-3.5 transition-transform duration-300 group-hover:translate-y-0.5" />
+              Download catalogue
+            </a>
+            <p className="text-xs tabular-nums text-zinc-500 md:text-sm">
+              {filtered.length} {filtered.length === 1 ? "product" : "products"}
+            </p>
+          </div>
         </header>
 
         {/* Toolbar */}
@@ -455,7 +470,7 @@ export default function CategoryListing({
         <div className="mt-6 grid gap-x-10 gap-y-0 md:mt-8 lg:grid-cols-[260px_1fr]">
           {/* Sidebar (lg+) */}
           <aside className="hidden lg:block">
-            <div className="sticky top-24">
+            <div className="">
               <div className="flex items-baseline justify-between border-b border-zinc-200 pb-3">
                 <h2 className="text-sm font-medium tracking-tight text-zinc-950">
                   Filters

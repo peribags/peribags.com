@@ -1,7 +1,7 @@
 // Single source of truth for company/contact details — used across the
 // storefront (footer, contact page, header, product pages, metadata, sitemap).
 
-const PHONES = ["9224588670", "9870135135", "7977010646"] as const;
+const PHONES = ["9224588670"] as const;
 const EMAILS = ["peribags01@gmail.com", "peribags26@gmail.com"] as const;
 
 // The number used for WhatsApp + the primary call-to-action (digits only, with
@@ -10,7 +10,11 @@ const WHATSAPP_NUMBER = "919224588670";
 
 export const siteConfig = {
   name: "peribags",
+  /** Brand wordmark shown next to the logo. */
+  brand: "Peri Bag",
   description: "Premium bags, crafted to last.",
+  /** GST registration number. */
+  gst: "27AFTPG1892G2Z1",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   // Public PDF catalogue. Drop the file at public/catalogue.pdf and it works.
   catalogueUrl: "/catalogue.pdf",

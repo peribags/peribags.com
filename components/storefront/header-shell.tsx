@@ -19,6 +19,8 @@ import { HeaderSearchModal } from "./header-search";
 
 const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/", label: "Home" },
+  { href: "/category/men", label: "Men" },
+  { href: "/category/women", label: "Women" },
   { href: "/category", label: "Products" },
   { href: "/about", label: "About" },
   { href: "/our-work", label: "Our Work" },
@@ -50,14 +52,25 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
     setSearchOpen(false);
   }, [pathname]);
 
-  // Escape closes mega.
+  // Escape closes mega. "/" opens search (unless the user is typing a field).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setMegaOpen(false);
+      if (e.key === "/" && !searchOpen) {
+        const t = e.target as HTMLElement | null;
+        const typing =
+          !!t &&
+          (t.tagName === "INPUT" ||
+            t.tagName === "TEXTAREA" ||
+            t.isContentEditable);
+        if (typing) return;
+        e.preventDefault();
+        setSearchOpen(true);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [searchOpen]);
 
   // Header is ALWAYS solid white on every route — no transparency, no
   // scroll-driven state, no path conditionals. Kept as a constant so the
@@ -77,25 +90,33 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
         }}
         className={cn("bg-white text-zinc-950")}
       >
-        <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-3 items-center px-4 md:px-6 lg:h-20 lg:px-[4vw]">
-          {/* Logo — left */}
+        <div className="mx-auto grid h-16 max-w-[1600px] grid-cols-[auto_1fr_auto] items-center px-4 md:px-6 lg:h-20 lg:px-[4vw]">
+          {/* Logo — left: mark + "Peri Bag" wordmark + GST below */}
           <Link
             href="/"
-            aria-label={siteConfig.name}
-            className="justify-self-start transition-opacity hover:opacity-70"
+            aria-label={siteConfig.brand}
+            className="flex items-center gap-2.5 justify-self-start transition-opacity hover:opacity-70 sm:gap-3"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/logo.webp"
-              alt={siteConfig.name}
+              alt={siteConfig.brand}
               width={44}
               height={44}
-              className="h-10 w-auto lg:h-12"
+              className="h-10 w-auto shrink-0 lg:h-12"
             />
+            <span className="flex flex-col leading-none">
+              <span className="text-base font-semibold tracking-tight text-zinc-950 sm:text-lg lg:text-xl">
+                {siteConfig.brand}
+              </span>
+              <span className="mt-1 text-[9px] font-medium tracking-wide text-zinc-500 tabular-nums sm:text-[10px]">
+                GST {siteConfig.gst}
+              </span>
+            </span>
           </Link>
 
           {/* Nav — centered (desktop) */}
-          <nav className="hidden items-center justify-self-center gap-8 lg:flex">
+          <nav className="hidden items-center justify-self-center gap-5 px-4 lg:flex xl:gap-7">
             {STATIC_LINKS.map((l) => {
               const active = pathname === l.href;
               const isShop = l.href === "/category";
@@ -105,7 +126,7 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
                   href={l.href}
                   aria-expanded={isShop ? megaOpen : undefined}
                   className={cn(
-                    "relative inline-flex items-center gap-1 text-sm font-medium tracking-tight transition-colors",
+                    "relative inline-flex items-center gap-1 whitespace-nowrap text-sm font-medium tracking-tight transition-colors",
                     "after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:origin-center after:scale-x-0 after:transition-transform after:duration-300 after:ease-out after:content-['']",
                     "hover:after:scale-x-100",
                     transparent
@@ -156,20 +177,18 @@ export function HeaderShell({ tiles }: { tiles: CategoryTile[] }) {
               col-start-3 keeps it in the right column even when the centered
               nav is hidden (mobile), where it would otherwise slot into col 2. */}
           <div className="col-start-3 flex items-center justify-self-end gap-2">
-            {/* Search pill — desktop */}
+            {/* Search field — desktop. Looks like an input, opens the modal. */}
             <button
               type="button"
               onClick={() => setSearchOpen(true)}
               aria-label="Open search"
-              className={cn(
-                "hidden w-56 items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors lg:inline-flex xl:w-72",
-                transparent
-                  ? "border-white/40 text-white/80 hover:border-white hover:text-white"
-                  : "border-zinc-300 text-zinc-500 hover:border-zinc-900 hover:text-zinc-700",
-              )}
+              className="group hidden h-9 w-44 items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 pl-3.5 pr-1.5 text-sm text-zinc-500 transition-all duration-200 hover:border-zinc-400 hover:bg-white hover:text-zinc-800 hover:shadow-[0_6px_18px_-10px_rgba(15,15,15,0.25)] lg:flex xl:w-56"
             >
-              <Search className="size-4 shrink-0" />
-              <span className="truncate">Search bags, categories…</span>
+              <Search className="size-4 shrink-0 text-zinc-400 transition-colors group-hover:text-zinc-700" />
+              <span className="flex-1 truncate text-left">Search…</span>
+              <kbd className="grid size-5 shrink-0 place-items-center rounded-md border border-zinc-200 bg-white font-mono text-[11px] font-medium text-zinc-400 transition-colors group-hover:border-zinc-300 group-hover:text-zinc-600">
+                /
+              </kbd>
             </button>
 
             {/* Hamburger — mobile */}
@@ -380,14 +399,24 @@ function MobileDrawer({
     <div className="flex h-full flex-col bg-white">
       {/* Top bar */}
       <div className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-200 px-5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/logo.webp"
-          alt={siteConfig.name}
-          width={36}
-          height={36}
-          className="h-9 w-auto"
-        />
+        <div className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.webp"
+            alt={siteConfig.brand}
+            width={36}
+            height={36}
+            className="h-9 w-auto shrink-0"
+          />
+          <span className="flex flex-col leading-none">
+            <span className="text-base font-semibold tracking-tight text-zinc-950">
+              {siteConfig.brand}
+            </span>
+            <span className="mt-0.5 text-[9px] font-medium tracking-wide text-zinc-500 tabular-nums">
+              GST {siteConfig.gst}
+            </span>
+          </span>
+        </div>
         <button
           type="button"
           onClick={onClose}

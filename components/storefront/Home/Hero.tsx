@@ -147,11 +147,15 @@ function SlideView({
   onNext: () => void;
 }) {
   const { desktopMedia, mobileMedia } = slide;
+  // The dark overlay exists for TEXT legibility — a CTA button has its own
+  // background, so a slide with only a button shouldn't darken the image.
   const hasText = Boolean(
-    slide.kicker || slide.heading || slide.description || slide.cta,
+    slide.kicker || slide.heading || slide.description,
   );
+  const hasCta = Boolean(slide.cta);
   const showNav = totalSlides > 1;
-  const showOverlay = hasText || showNav;
+  // The content container still renders for a button or the nav controls.
+  const showOverlay = hasText || hasCta || showNav;
   const pad = (n: number) => String(n + 1).padStart(2, "0");
 
   return (
@@ -276,7 +280,7 @@ function SlideView({
                 className={cn(
                   TEXT_ENTRY,
                   "data-[active=true]:delay-[540ms]",
-                  hasText ? "mt-8" : "mt-0",
+                  hasText || hasCta ? "mt-8" : "mt-0",
                   "flex items-center gap-4",
                 )}
               >

@@ -1,3 +1,4 @@
+import AboutCompany from "@/components/storefront/Home/AboutCompany";
 import AboutEditorial from "@/components/storefront/Home/AboutEditorial";
 import CatalogueCTA from "@/components/storefront/Home/CatalogueCTA";
 import EditorialStory from "@/components/storefront/Home/EditorialStory";
@@ -72,6 +73,8 @@ export default async function HomePage() {
       />
 
       <HomeSections />
+
+      <AboutCompany />
 
       <AboutEditorial
         kicker="Our Craft"
