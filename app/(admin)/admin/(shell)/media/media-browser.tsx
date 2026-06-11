@@ -126,21 +126,34 @@ export function MediaBrowser() {
     setUploading((c) => c + files.length);
 
     const uploads = Array.from(files).map(async (file) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("folder", "uploads");
-      const res = await fetch("/api/admin/upload", {
+      // Step 1: presigned URL request (JSON only).
+      const signRes = await fetch("/api/admin/upload", {
         method: "POST",
-        body: fd,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          size: file.size,
+          folder: "uploads",
+        }),
       });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(body?.error ?? "Upload failed");
+      const signBody = await signRes.json().catch(() => ({}));
+      if (!signRes.ok) throw new Error(signBody?.error ?? "Upload failed");
+
+      // Step 2: PUT bytes straight to R2 (bypasses Vercel's body limit).
+      const putRes = await fetch(signBody.uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      if (!putRes.ok) throw new Error(`R2 upload failed (${putRes.status})`);
+
       return {
-        key: body.key as string,
-        url: body.url as string,
+        key: signBody.key as string,
+        url: signBody.url as string,
         size: file.size,
         lastModified: new Date().toISOString(),
-        kind: (body.mediaType === "video"
+        kind: (signBody.mediaType === "video"
           ? "video"
           : "image") as MediaItem["kind"],
       } satisfies MediaItem;
