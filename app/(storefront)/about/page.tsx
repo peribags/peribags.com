@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: `The story of ${siteConfig.name} — a Mumbai workshop making bags by hand since day one. The people, the principles, and the craft.`,
 };
 
-// Project-wide policy: no caching anywhere. Every request server-renders.
-export const dynamic = "force-dynamic";
+// Pure JSX, no data fetches — pre-rendered at build time, served forever
+// from Vercel edge until next deploy.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Content — edit freely.

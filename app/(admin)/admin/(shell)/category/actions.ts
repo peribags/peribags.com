@@ -144,7 +144,7 @@ export async function updateCategoryAction(
 
   updateTag(CACHE_TAGS.categories);
   updateTag(CACHE_TAGS.category(slug));
-  return { ok: true };
+  redirect("/admin/category?updated=1");
 }
 
 export async function deleteCategoryAction(formData: FormData): Promise<void> {

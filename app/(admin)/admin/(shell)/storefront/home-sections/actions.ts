@@ -110,7 +110,7 @@ export async function updateSectionAction(
   }
 
   revalidateSections();
-  return { ok: true };
+  redirect("/admin/storefront/home-sections?updated=1");
 }
 
 export async function deleteSectionAction(formData: FormData): Promise<void> {

@@ -99,7 +99,7 @@ export async function updateBannerSlideAction(
   }
 
   revalidateBanner();
-  return { ok: true };
+  redirect("/admin/storefront/home-banner?updated=1");
 }
 
 export async function deleteBannerSlideAction(formData: FormData): Promise<void> {

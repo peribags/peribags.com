@@ -326,7 +326,7 @@ export async function updateProductAction(
 
   updateTag(CACHE_TAGS.products);
   updateTag(CACHE_TAGS.product(slug));
-  return { ok: true };
+  redirect("/admin/products?updated=1");
 }
 
 export async function deleteProductAction(formData: FormData): Promise<void> {

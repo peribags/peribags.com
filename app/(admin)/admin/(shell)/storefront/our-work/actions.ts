@@ -99,7 +99,7 @@ export async function updateOurWorkAction(
   }
 
   revalidateOurWork();
-  return { ok: true };
+  redirect("/admin/storefront/our-work?updated=1");
 }
 
 export async function deleteOurWorkAction(formData: FormData): Promise<void> {

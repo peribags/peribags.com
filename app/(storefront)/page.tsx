@@ -12,8 +12,11 @@ import { r2PublicUrl } from "@/lib/r2";
 import { getPublishedHomeBanner } from "@/lib/services/storefront/home-banner.service";
 import type { HomeBannerSlide } from "@/types";
 
-// No caching anywhere — every request server-renders fresh.
-export const dynamic = "force-dynamic";
+// Static at build, indefinite cache. ONLY regenerates when an admin save
+// fires `updateTag(...)` for one of the tags this page's data uses
+// (banner, sections, reels, categories). No time-based fallback —
+// `revalidate = false` disables periodic regeneration.
+export const revalidate = false;
 
 function toHeroSlide(s: HomeBannerSlide): HeroBannerSlide {
   const cta =

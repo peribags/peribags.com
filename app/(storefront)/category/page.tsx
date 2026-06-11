@@ -10,8 +10,9 @@ export const metadata = {
     "Browse every peribags category — totes, slings, backpacks, wallets, and more.",
 };
 
-// Project-wide policy: no caching anywhere. Every request server-renders.
-export const dynamic = "force-dynamic";
+// Tag-only invalidation. Regenerates ONLY when `updateTag(categories)`
+// fires from admin category saves. No time-based fallback.
+export const revalidate = false;
 
 export default async function CategoryIndexPage() {
   const tree = await listPublishedCategoryTree();

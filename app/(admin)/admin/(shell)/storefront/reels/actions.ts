@@ -88,7 +88,7 @@ export async function updateReelAction(
   }
 
   revalidateReels();
-  return { ok: true };
+  redirect("/admin/storefront/reels?updated=1");
 }
 
 export async function deleteReelAction(formData: FormData): Promise<void> {

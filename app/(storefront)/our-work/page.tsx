@@ -14,8 +14,9 @@ export const metadata: Metadata = {
   description: `A look inside ${siteConfig.name} — the bags we've made, the hands that make them, and the craft behind every stitch.`,
 };
 
-// Project-wide policy: no caching anywhere. Every request server-renders.
-export const dynamic = "force-dynamic";
+// Tag-only invalidation. Regenerates ONLY when `updateTag(ourWork)` fires
+// from admin saves. No time-based fallback.
+export const revalidate = false;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Page-level static content — stats, marquee strip, process steps.
